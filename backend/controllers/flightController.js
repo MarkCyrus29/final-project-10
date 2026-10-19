@@ -168,11 +168,11 @@ const deleteFlight = async (req, res, next) => {
       return res.status(404).json({ message: 'Flight not found' });
     }
 
-    // Do not delete a flight that still has active bookings
-    const activeBooking = await Booking.exists({ flight: flight._id, status: 'Confirmed' });
-    if (activeBooking) {
+    // Do not delete a flight that has bookings, so booking history keeps its flight
+    const hasBookings = await Booking.exists({ flight: flight._id });
+    if (hasBookings) {
       return res.status(400).json({
-        message: 'This flight has confirmed bookings. Set its status to Cancelled instead of deleting it.'
+        message: 'This flight has bookings. Set its status to Cancelled instead of deleting it.'
       });
     }
 

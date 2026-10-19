@@ -12,7 +12,12 @@ const registerValidation = [
   body('email').trim().isEmail().withMessage('Please provide a valid email'),
   body('password')
     .isLength({ min: 6 })
-    .withMessage('Password must be at least 6 characters long')
+    .withMessage('Password must be at least 6 characters long'),
+  body('phone')
+    .optional({ values: 'falsy' })
+    .matches(/^[0-9+\-()\s]+$/)
+    .withMessage('Phone can only contain digits, spaces, + - ( )'),
+  body('nationality').optional({ values: 'falsy' }).isString().withMessage('Nationality must be text')
 ];
 
 // Validation rules for login

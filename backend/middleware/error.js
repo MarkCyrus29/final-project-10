@@ -19,7 +19,8 @@ const errorHandler = (err, req, res, next) => {
     // Duplicate value on a unique field (email, flightNumber, ...)
     statusCode = 400;
     const field = Object.keys(err.keyValue || {})[0] || 'value';
-    message = `${field} already exists`;
+    const labels = { flightNumber: 'Flight number', email: 'Email', bookingReference: 'Booking reference' };
+    message = `${labels[field] || field} already exists`;
   }
 
   res.status(statusCode).json({ message });

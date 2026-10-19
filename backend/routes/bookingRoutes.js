@@ -34,6 +34,9 @@ const createBookingValidation = [
   body('passengers.*.dateOfBirth')
     .isISO8601()
     .withMessage('Valid passenger date of birth is required')
+    .bail()
+    .custom((value) => new Date(value) <= new Date())
+    .withMessage('Passenger date of birth cannot be in the future')
 ];
 
 // Update status validation (Admin)

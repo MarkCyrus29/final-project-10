@@ -18,7 +18,11 @@ const updateValidation = [
   ...idValidation,
   body('firstName').optional().trim().notEmpty().withMessage('First name cannot be empty'),
   body('lastName').optional().trim().notEmpty().withMessage('Last name cannot be empty'),
-  body('phone').optional().isString().withMessage('Phone must be text').trim(),
+  body('phone')
+    .optional()
+    .trim()
+    .matches(/^[0-9+\-()\s]*$/)
+    .withMessage('Phone can only contain digits, spaces, + - ( )'),
   body('nationality').optional().isString().withMessage('Nationality must be text').trim(),
   body('newPassword')
     .optional()

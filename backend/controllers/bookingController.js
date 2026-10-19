@@ -156,6 +156,12 @@ const updateBookingStatus = async (req, res, next) => {
     }
 
     const oldStatus = booking.status;
+
+    // A cancelled booking has already given its seats back, so it cannot be reopened
+    if (oldStatus === 'Cancelled' && status !== 'Cancelled') {
+      return res.status(400).json({ message: 'A cancelled booking cannot be changed' });
+    }
+
     booking.status = status;
     await booking.save();
 

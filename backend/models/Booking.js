@@ -17,13 +17,20 @@ const bookingSchema = new mongoose.Schema({
     ref: 'Flight',
     required: [true, 'Flight is required']
   },
-  passengers: [
-    {
-      firstName: { type: String, required: [true, 'Passenger first name is required'], trim: true },
-      lastName: { type: String, required: [true, 'Passenger last name is required'], trim: true },
-      dateOfBirth: { type: Date, required: [true, 'Passenger date of birth is required'] }
+  passengers: {
+    type: [
+      {
+        firstName: { type: String, required: [true, 'Passenger first name is required'], trim: true },
+        lastName: { type: String, required: [true, 'Passenger last name is required'], trim: true },
+        dateOfBirth: { type: Date, required: [true, 'Passenger date of birth is required'] }
+      }
+    ],
+    validate: {
+      // A booking needs between 1 and 9 passengers
+      validator: (list) => list.length >= 1 && list.length <= 9,
+      message: 'A booking must have between 1 and 9 passengers'
     }
-  ],
+  },
   seatClass: {
     type: String,
     enum: ['Economy', 'Business', 'First Class'],
