@@ -4,6 +4,7 @@ import { AuthProvider } from './context/AuthContext';
 import Navbar from './components/Navbar';
 import ProtectedRoute from './routes/ProtectedRoute';
 import AdminRoute from './routes/AdminRoute';
+import PassengerRoute from './routes/PassengerRoute';
 
 import Login from './pages/Login';
 import Register from './pages/Register';
@@ -42,17 +43,17 @@ function App() {
               <Route
                 path="/book/:id"
                 element={
-                  <ProtectedRoute>
+                  <PassengerRoute>
                     <BookFlight />
-                  </ProtectedRoute>
+                  </PassengerRoute>
                 }
               />
               <Route
                 path="/my-bookings"
                 element={
-                  <ProtectedRoute>
+                  <PassengerRoute>
                     <MyBookings />
-                  </ProtectedRoute>
+                  </PassengerRoute>
                 }
               />
               <Route

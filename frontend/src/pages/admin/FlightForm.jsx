@@ -12,14 +12,14 @@ const schema = yup.object().shape({
   originCode: yup
     .string()
     .trim()
-    .length(3, 'Origin airport code must be 3 letters')
-    .required('Origin airport code is required'),
+    .required('Origin airport code is required')
+    .matches(/^[A-Za-z]{3}$/, 'Origin airport code must be 3 letters'),
   destinationCity: yup.string().trim().required('Destination city is required'),
   destinationCode: yup
     .string()
     .trim()
-    .length(3, 'Destination airport code must be 3 letters')
-    .required('Destination airport code is required'),
+    .required('Destination airport code is required')
+    .matches(/^[A-Za-z]{3}$/, 'Destination airport code must be 3 letters'),
   departureTime: yup.string().required('Departure time is required'),
   arrivalTime: yup
     .string()

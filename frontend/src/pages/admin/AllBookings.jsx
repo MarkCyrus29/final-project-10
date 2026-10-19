@@ -261,7 +261,7 @@ const AllBookings = () => {
                         <div className="flex items-center space-x-2">
                           <select
                             value={booking.status}
-                            disabled={isUpdating}
+                            disabled={isUpdating || booking.status === 'Cancelled'}
                             onChange={(e) => handleStatusChange(booking._id, e.target.value)}
                             className={`text-xs font-semibold px-2.5 py-1.5 rounded-lg border focus:outline-none focus:ring-2 focus:ring-blue-500 ${getStatusBadge(
                               booking.status

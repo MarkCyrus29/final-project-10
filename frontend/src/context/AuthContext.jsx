@@ -16,8 +16,12 @@ export const AuthProvider = ({ children }) => {
           const response = await api.get('/api/auth/me');
           setUser(response.data);
         } catch (error) {
-          console.error('Session expired or invalid token');
-          localStorage.removeItem('token');
+          // Only drop the token when the server says it is invalid (401).
+          // If the server is just down, keep the token so a refresh works later.
+          if (error.response?.status === 401) {
+            console.error('Session expired or invalid token');
+            localStorage.removeItem('token');
+          }
           setUser(null);
         }
       }

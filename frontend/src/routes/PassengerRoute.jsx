@@ -1,0 +1,28 @@
+import React from 'react';
+import { Navigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
+
+// PassengerRoute ensures the user is logged in AND is a passenger (admins cannot make bookings)
+const PassengerRoute = ({ children }) => {
+  const { user, loading } = useAuth();
+
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center h-64">
+        <div className="text-gray-600 text-lg font-medium">Loading...</div>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return <Navigate to="/login" replace />;
+  }
+
+  if (user.role !== 'passenger') {
+    return <Navigate to="/admin" replace />;
+  }
+
+  return children;
+};
+
+export default PassengerRoute;

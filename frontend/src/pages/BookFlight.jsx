@@ -22,7 +22,12 @@ const schema = yup.object().shape({
       yup.object().shape({
         firstName: yup.string().trim().required('First name is required'),
         lastName: yup.string().trim().required('Last name is required'),
-        dateOfBirth: yup.string().required('Date of birth is required')
+        dateOfBirth: yup
+          .string()
+          .required('Date of birth is required')
+          .test('not-future', 'Date of birth cannot be in the future', (value) => {
+            return !value || new Date(value) <= new Date();
+          })
       })
     )
     .min(1, 'At least 1 passenger is required')
