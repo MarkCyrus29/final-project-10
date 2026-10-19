@@ -7,6 +7,8 @@ dotenv.config();
 
 const connectDB = require('./config/db');
 const authRoutes = require('./routes/authRoutes');
+const userRoutes = require('./routes/userRoutes');
+const flightRoutes = require('./routes/flightRoutes');
 const errorHandler = require('./middleware/error');
 
 const app = express();
@@ -25,6 +27,13 @@ app.get('/api/health', (req, res) => {
 
 // API Routes
 app.use('/api/auth', authRoutes);
+app.use('/api/users', userRoutes);
+app.use('/api/flights', flightRoutes);
+
+// Unknown routes return JSON instead of an HTML page
+app.use((req, res) => {
+  res.status(404).json({ message: 'Route not found' });
+});
 
 // Global Error Handler
 app.use(errorHandler);
