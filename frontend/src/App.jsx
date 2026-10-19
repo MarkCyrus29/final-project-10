@@ -18,6 +18,8 @@ import AdminDashboard from './pages/admin/AdminDashboard';
 import ManageFlights from './pages/admin/ManageFlights';
 import FlightForm from './pages/admin/FlightForm';
 import ManageUsers from './pages/admin/ManageUsers';
+import AllBookings from './pages/admin/AllBookings';
+import FlightManifest from './pages/admin/FlightManifest';
 
 function App() {
   return (
@@ -100,6 +102,22 @@ function App() {
                 element={
                   <AdminRoute>
                     <FlightForm />
+                  </AdminRoute>
+                }
+              />
+              <Route
+                path="/admin/bookings"
+                element={
+                  <AdminRoute>
+                    <AllBookings />
+                  </AdminRoute>
+                }
+              />
+              <Route
+                path="/admin/flights/:id/manifest"
+                element={
+                  <AdminRoute>
+                    <FlightManifest />
                   </AdminRoute>
                 }
               />

@@ -64,6 +64,9 @@ const Navbar = () => {
                 <Link to="/admin/flights" className="hover:bg-blue-700 px-3 py-2 rounded-md text-sm font-medium">
                   Manage Flights
                 </Link>
+                <Link to="/admin/bookings" className="hover:bg-blue-700 px-3 py-2 rounded-md text-sm font-medium">
+                  All Bookings
+                </Link>
                 <Link to="/admin/users" className="hover:bg-blue-700 px-3 py-2 rounded-md text-sm font-medium">
                   Manage Users
                 </Link>

@@ -167,14 +167,20 @@ const ManageFlights = () => {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-right space-x-2">
                         <Link
+                          to={`/admin/flights/${flight._id}/manifest`}
+                          className="text-indigo-600 hover:text-indigo-800 font-medium text-xs bg-indigo-50 hover:bg-indigo-100 px-2.5 py-1.5 rounded transition inline-block"
+                        >
+                          Manifest
+                        </Link>
+                        <Link
                           to={`/admin/flights/${flight._id}/edit`}
-                          className="text-blue-600 hover:text-blue-800 font-medium text-xs bg-blue-50 hover:bg-blue-100 px-2.5 py-1.5 rounded transition"
+                          className="text-blue-600 hover:text-blue-800 font-medium text-xs bg-blue-50 hover:bg-blue-100 px-2.5 py-1.5 rounded transition inline-block"
                         >
                           Edit
                         </Link>
                         <button
                           onClick={() => handleDelete(flight._id, flight.flightNumber)}
-                          className="text-rose-600 hover:text-rose-800 font-medium text-xs bg-rose-50 hover:bg-rose-100 px-2.5 py-1.5 rounded transition"
+                          className="text-rose-600 hover:text-rose-800 font-medium text-xs bg-rose-50 hover:bg-rose-100 px-2.5 py-1.5 rounded transition inline-block"
                         >
                           Delete
                         </button>
