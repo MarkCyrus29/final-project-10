@@ -8,9 +8,15 @@ import AdminRoute from './routes/AdminRoute';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import Flights from './pages/Flights';
+import FlightDetails from './pages/FlightDetails';
+import BookFlight from './pages/BookFlight';
 import MyBookings from './pages/MyBookings';
+import BookingDetails from './pages/BookingDetails';
 import Profile from './pages/Profile';
+
 import AdminDashboard from './pages/admin/AdminDashboard';
+import ManageFlights from './pages/admin/ManageFlights';
+import FlightForm from './pages/admin/FlightForm';
 
 function App() {
   return (
@@ -25,15 +31,32 @@ function App() {
 
               {/* Public Routes */}
               <Route path="/flights" element={<Flights />} />
+              <Route path="/flights/:id" element={<FlightDetails />} />
               <Route path="/login" element={<Login />} />
               <Route path="/register" element={<Register />} />
 
-              {/* Protected Passenger Routes */}
+              {/* Protected Routes (Authenticated) */}
+              <Route
+                path="/book/:id"
+                element={
+                  <ProtectedRoute>
+                    <BookFlight />
+                  </ProtectedRoute>
+                }
+              />
               <Route
                 path="/my-bookings"
                 element={
                   <ProtectedRoute>
                     <MyBookings />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/bookings/:id"
+                element={
+                  <ProtectedRoute>
+                    <BookingDetails />
                   </ProtectedRoute>
                 }
               />
@@ -52,6 +75,30 @@ function App() {
                 element={
                   <AdminRoute>
                     <AdminDashboard />
+                  </AdminRoute>
+                }
+              />
+              <Route
+                path="/admin/flights"
+                element={
+                  <AdminRoute>
+                    <ManageFlights />
+                  </AdminRoute>
+                }
+              />
+              <Route
+                path="/admin/flights/new"
+                element={
+                  <AdminRoute>
+                    <FlightForm />
+                  </AdminRoute>
+                }
+              />
+              <Route
+                path="/admin/flights/:id/edit"
+                element={
+                  <AdminRoute>
+                    <FlightForm />
                   </AdminRoute>
                 }
               />
