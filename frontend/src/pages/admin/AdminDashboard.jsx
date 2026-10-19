@@ -28,10 +28,16 @@ const AdminDashboard = () => {
             </div>
             <p className="text-sm text-gray-500">Add, edit, and cancel flight schedules.</p>
           </Link>
-          <div className="border border-gray-200 rounded-lg p-5 bg-gray-50">
-            <h3 className="text-lg font-semibold text-gray-800 mb-2">User Management</h3>
-            <p className="text-sm text-gray-500">View and remove user accounts (Phase 4).</p>
-          </div>
+          <Link
+            to="/admin/users"
+            className="border border-gray-200 rounded-lg p-5 bg-gray-50 hover:bg-blue-50 hover:border-blue-300 transition block group"
+          >
+            <div className="flex justify-between items-center mb-2">
+              <h3 className="text-lg font-semibold text-gray-800 group-hover:text-blue-600">User Management</h3>
+              <span className="text-blue-600 text-sm font-semibold">Manage →</span>
+            </div>
+            <p className="text-sm text-gray-500">View and remove user accounts.</p>
+          </Link>
           <div className="border border-gray-200 rounded-lg p-5 bg-gray-50">
             <h3 className="text-lg font-semibold text-gray-800 mb-2">Manifest & Bookings</h3>
             <p className="text-sm text-gray-500">Monitor all bookings and passenger manifests (Phase 5).</p>

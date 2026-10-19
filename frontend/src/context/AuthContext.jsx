@@ -51,8 +51,13 @@ export const AuthProvider = ({ children }) => {
     setUser(null);
   };
 
+  // Replace the stored user after a profile update (used by the Profile page)
+  const updateUser = (updatedUser) => {
+    setUser(updatedUser);
+  };
+
   return (
-    <AuthContext.Provider value={{ user, loading, login, register, logout }}>
+    <AuthContext.Provider value={{ user, loading, login, register, logout, updateUser }}>
       {children}
     </AuthContext.Provider>
   );

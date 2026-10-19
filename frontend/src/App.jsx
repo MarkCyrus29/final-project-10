@@ -17,6 +17,7 @@ import Profile from './pages/Profile';
 import AdminDashboard from './pages/admin/AdminDashboard';
 import ManageFlights from './pages/admin/ManageFlights';
 import FlightForm from './pages/admin/FlightForm';
+import ManageUsers from './pages/admin/ManageUsers';
 
 function App() {
   return (
@@ -99,6 +100,14 @@ function App() {
                 element={
                   <AdminRoute>
                     <FlightForm />
+                  </AdminRoute>
+                }
+              />
+              <Route
+                path="/admin/users"
+                element={
+                  <AdminRoute>
+                    <ManageUsers />
                   </AdminRoute>
                 }
               />
