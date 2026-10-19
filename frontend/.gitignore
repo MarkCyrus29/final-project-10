@@ -1,24 +1,14 @@
-# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
-
 # dependencies
 /node_modules
 /.pnp
 .pnp.*
-.yarn/*
-!.yarn/patches
-!.yarn/plugins
-!.yarn/releases
-!.yarn/versions
+
+# production
+/dist
+/build
 
 # testing
 /coverage
-
-# next.js
-/.next/
-/out/
-
-# production
-/build
 
 # misc
 .DS_Store
@@ -30,16 +20,13 @@ yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 
-# env files (can opt-in for committing if needed)
-.env*
-
-# vercel
-.vercel
+# env files (do not commit secrets, keep .env.example)
+.env.local
+.env.*.local
 
 # typescript
 *.tsbuildinfo
-next-env.d.ts
 
-#some team stuff
+# project team docs
 context.md
 plan.md
