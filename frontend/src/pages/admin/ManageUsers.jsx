@@ -1,14 +1,29 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { ArrowLeft, Users } from 'lucide-react';
 import api from '../../api/axios';
 import { useAuth } from '../../context/AuthContext';
+import { useDocumentTitle } from '../../hooks/useDocumentTitle';
+import { useToast } from '../../context/ToastContext';
+import { useConfirm } from '../../context/ConfirmContext';
+import { Button, ButtonLink } from '../../components/ui/Button';
+import { Badge } from '../../components/ui/Badge';
+import { Card } from '../../components/ui/Card';
+import { PageHeader } from '../../components/ui/PageHeader';
+import { EmptyState } from '../../components/ui/EmptyState';
+import { Alert } from '../../components/ui/Alert';
+import { DataTable } from '../../components/ui/DataTable';
+import { TableSkeleton } from '../../components/ui/Skeleton';
 
 const ManageUsers = () => {
   const { user: currentUser } = useAuth();
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
+
+  const toast = useToast();
+  const confirm = useConfirm();
+
+  useDocumentTitle('Manage users');
 
   const fetchUsers = async () => {
     setLoading(true);
@@ -28,112 +43,139 @@ const ManageUsers = () => {
   }, []);
 
   const handleDelete = async (u) => {
-    if (
-      !window.confirm(
-        `Delete ${u.firstName} ${u.lastName} (${u.email})?\n\nTheir bookings will also be deleted and the seats of their confirmed bookings will be released.`
-      )
-    ) {
-      return;
-    }
+    const ok = await confirm({
+      title: 'Delete user account',
+      description: `Delete ${u.firstName} ${u.lastName} (${u.email})? Their bookings will also be deleted and the seats of their confirmed bookings will be released.`,
+      confirmText: 'Delete user',
+      variant: 'danger'
+    });
 
-    setError('');
-    setSuccess('');
+    if (!ok) return;
+
     try {
       await api.delete(`/api/users/${u._id}`);
-      setSuccess(`${u.firstName} ${u.lastName} was deleted.`);
+      toast.success(`${u.firstName} ${u.lastName} was deleted.`);
       setUsers((prev) => prev.filter((item) => item._id !== u._id));
     } catch (err) {
-      setError(err.response?.data?.message || 'Failed to delete user.');
+      toast.error(err.response?.data?.message || 'Failed to delete user.');
     }
   };
 
+  const columns = [
+    {
+      header: 'Name',
+      cell: (u) => {
+        const isSelf = currentUser && u._id === currentUser._id;
+        return (
+          <div className="flex items-center gap-2">
+            <span className="font-semibold text-ink">
+              {u.firstName} {u.lastName}
+            </span>
+            {isSelf && (
+              <span className="text-xs text-ink-muted">(you)</span>
+            )}
+          </div>
+        );
+      }
+    },
+    {
+      header: 'Email',
+      accessorKey: 'email',
+      cell: (u) => <span className="text-ink-muted">{u.email}</span>
+    },
+    {
+      header: 'Role',
+      cell: (u) => (
+        <Badge variant={u.role === 'admin' ? 'accent' : 'neutral'}>
+          {u.role}
+        </Badge>
+      )
+    },
+    {
+      header: 'Phone',
+      cell: (u) => <span className="text-ink-muted">{u.phone || '—'}</span>
+    },
+    {
+      header: 'Actions',
+      className: 'text-right',
+      cell: (u) => {
+        const isSelf = currentUser && u._id === currentUser._id;
+        if (isSelf) return null;
+        return (
+          <Button
+            variant="danger"
+            size="sm"
+            onClick={() => handleDelete(u)}
+          >
+            Delete
+          </Button>
+        );
+      }
+    }
+  ];
+
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
-      {/* Header */}
-      <div className="mb-6">
-        <Link to="/admin" className="text-sm text-blue-600 hover:underline">
-          ← Admin Dashboard
-        </Link>
-        <h1 className="text-3xl font-extrabold text-gray-900 mt-1">User Management</h1>
-        <p className="text-sm text-gray-500">View all registered accounts and remove users when needed.</p>
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
+      <div>
+        <ButtonLink to="/admin" variant="ghost" size="sm" className="mb-2">
+          <ArrowLeft className="w-4 h-4 mr-1.5" />
+          Admin dashboard
+        </ButtonLink>
+        <PageHeader
+          title="User management"
+          description="View all registered accounts and remove users when needed."
+        />
       </div>
 
-      {/* Notifications */}
-      {error && (
-        <div className="bg-red-50 border-l-4 border-red-500 p-4 rounded-lg text-red-700 text-sm mb-6">
-          {error}
-        </div>
-      )}
-      {success && (
-        <div className="bg-emerald-50 border-l-4 border-emerald-500 p-4 rounded-lg text-emerald-700 text-sm mb-6">
-          {success}
-        </div>
-      )}
+      {error && <Alert variant="danger">{error}</Alert>}
 
-      {/* Table */}
       {loading ? (
-        <div className="text-center py-16 bg-white rounded-xl shadow-sm border border-gray-200">
-          <div className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-blue-600 border-t-transparent"></div>
-          <p className="mt-3 text-sm text-gray-500">Loading users...</p>
-        </div>
+        <Card className="p-6">
+          <TableSkeleton rows={6} cols={5} />
+        </Card>
       ) : users.length === 0 ? (
-        <div className="bg-white rounded-xl border border-dashed border-gray-300 p-12 text-center">
-          <p className="text-gray-500">No users found.</p>
-        </div>
+        <EmptyState
+          icon={Users}
+          title="No users found"
+          description="No user accounts registered yet."
+        />
       ) : (
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200 text-left text-sm">
-              <thead className="bg-gray-50 text-gray-600 font-semibold uppercase text-xs tracking-wider">
-                <tr>
-                  <th className="px-6 py-3.5">Name</th>
-                  <th className="px-6 py-3.5">Email</th>
-                  <th className="px-6 py-3.5">Role</th>
-                  <th className="px-6 py-3.5">Phone</th>
-                  <th className="px-6 py-3.5 text-right">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100">
-                {users.map((u) => {
-                  const isSelf = currentUser && u._id === currentUser._id;
-
-                  return (
-                    <tr key={u._id} className="hover:bg-gray-50 transition-colors">
-                      <td className="px-6 py-4 whitespace-nowrap font-semibold text-gray-900">
-                        {u.firstName} {u.lastName}
-                        {isSelf && <span className="ml-2 text-xs font-normal text-gray-400">(you)</span>}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-gray-700">{u.email}</td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span
-                          className={`text-xs px-2.5 py-0.5 rounded-full font-semibold uppercase ${
-                            u.role === 'admin'
-                              ? 'bg-purple-100 text-purple-800'
-                              : 'bg-blue-100 text-blue-800'
-                          }`}
-                        >
-                          {u.role}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-gray-700">{u.phone || '—'}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-right">
-                        {/* An admin cannot delete their own account */}
-                        {!isSelf && (
-                          <button
-                            onClick={() => handleDelete(u)}
-                            className="text-rose-600 hover:text-rose-800 font-medium text-xs bg-rose-50 hover:bg-rose-100 px-2.5 py-1.5 rounded transition"
-                          >
-                            Delete
-                          </button>
-                        )}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        </div>
+        <Card className="overflow-hidden">
+          <DataTable
+            columns={columns}
+            data={users}
+            keyField="_id"
+            mobileCard={(u) => {
+              const isSelf = currentUser && u._id === currentUser._id;
+              return (
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-1.5 font-medium text-ink">
+                      <span>{u.firstName} {u.lastName}</span>
+                      {isSelf && <span className="text-xs text-ink-muted">(you)</span>}
+                    </div>
+                    <Badge variant={u.role === 'admin' ? 'accent' : 'neutral'}>
+                      {u.role}
+                    </Badge>
+                  </div>
+                  <div className="text-xs text-ink-muted">{u.email}</div>
+                  <div className="text-xs text-ink-muted">Phone: {u.phone || '—'}</div>
+                  {!isSelf && (
+                    <div className="pt-2 border-t border-line flex justify-end">
+                      <Button
+                        variant="danger"
+                        size="sm"
+                        onClick={() => handleDelete(u)}
+                      >
+                        Delete
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              );
+            }}
+          />
+        </Card>
       )}
     </div>
   );

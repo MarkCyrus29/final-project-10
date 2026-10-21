@@ -1,17 +1,13 @@
 import React from 'react';
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { PageSpinner } from '../components/ui/Spinner';
 
-// AdminRoute ensures the user is logged in AND has admin role
 const AdminRoute = ({ children }) => {
   const { user, loading } = useAuth();
 
   if (loading) {
-    return (
-      <div className="flex justify-center items-center h-64">
-        <div className="text-gray-600 text-lg font-medium">Loading...</div>
-      </div>
-    );
+    return <PageSpinner />;
   }
 
   if (!user) {

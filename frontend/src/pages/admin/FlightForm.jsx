@@ -2,8 +2,17 @@ import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import * as yup from 'yup';
-import { useNavigate, useParams, Link } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
+import { ArrowLeft } from 'lucide-react';
 import api from '../../api/axios';
+import { useDocumentTitle } from '../../hooks/useDocumentTitle';
+import { useToast } from '../../context/ToastContext';
+import { Button, ButtonLink } from '../../components/ui/Button';
+import { Input } from '../../components/ui/Input';
+import { Select } from '../../components/ui/Select';
+import { Card } from '../../components/ui/Card';
+import { Alert } from '../../components/ui/Alert';
+import { DetailSkeleton } from '../../components/ui/Skeleton';
 
 // Validation schema
 const schema = yup.object().shape({
@@ -48,10 +57,13 @@ const FlightForm = () => {
   const { id } = useParams();
   const isEdit = Boolean(id);
   const navigate = useNavigate();
+  const toast = useToast();
 
   const [loading, setLoading] = useState(isEdit);
   const [submitting, setSubmitting] = useState(false);
   const [serverError, setServerError] = useState('');
+
+  useDocumentTitle(isEdit ? 'Edit flight' : 'Add new flight');
 
   const {
     register,
@@ -66,7 +78,6 @@ const FlightForm = () => {
     }
   });
 
-  // Convert Date object to datetime-local string (YYYY-MM-DDTHH:MM)
   const formatDatetimeLocal = (isoString) => {
     if (!isoString) return '';
     const date = new Date(isoString);
@@ -129,8 +140,10 @@ const FlightForm = () => {
     try {
       if (isEdit) {
         await api.put(`/api/flights/${id}`, payload);
+        toast.success('Flight updated successfully.');
       } else {
         await api.post('/api/flights', payload);
+        toast.success('Flight created successfully.');
       }
       navigate('/admin/flights');
     } catch (err) {
@@ -142,227 +155,189 @@ const FlightForm = () => {
 
   if (loading) {
     return (
-      <div className="max-w-3xl mx-auto px-4 py-16 text-center">
-        <div className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-blue-600 border-t-transparent"></div>
-        <p className="mt-3 text-sm text-gray-500">Loading flight details...</p>
+      <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
+        <DetailSkeleton />
       </div>
     );
   }
 
   return (
-    <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
-      <div className="mb-6">
-        <Link to="/admin/flights" className="text-sm font-medium text-gray-600 hover:text-gray-900">
-          ← Back to Flight Management
-        </Link>
-        <h1 className="text-2xl font-extrabold text-gray-900 mt-2">
-          {isEdit ? 'Edit Flight' : 'Add New Flight'}
+    <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
+      <div>
+        <ButtonLink to="/admin/flights" variant="ghost" size="sm">
+          <ArrowLeft className="w-4 h-4 mr-1.5" />
+          Back to flight management
+        </ButtonLink>
+        <h1 className="text-2xl font-bold tracking-tight text-ink mt-3">
+          {isEdit ? 'Edit flight' : 'Add new flight'}
         </h1>
-        <p className="text-sm text-gray-500">
+        <p className="text-sm text-ink-muted">
           Fill in the details below to {isEdit ? 'update the' : 'schedule a new'} flight.
         </p>
       </div>
 
-      {serverError && (
-        <div className="bg-red-50 border-l-4 border-red-500 p-4 rounded-lg text-red-700 text-sm mb-6">
-          {serverError}
-        </div>
-      )}
+      {serverError && <Alert variant="danger">{serverError}</Alert>}
 
-      <form onSubmit={handleSubmit(onSubmit)} className="bg-white rounded-xl shadow-sm border border-gray-200 p-8 space-y-6">
-        {/* Flight Number & Cabin Class */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-          <div>
-            <label className="block text-xs font-semibold uppercase tracking-wider text-gray-700 mb-1">
-              Flight Number
-            </label>
-            <input
-              type="text"
+      <form onSubmit={handleSubmit(onSubmit)}>
+        <Card className="p-6 sm:p-8 space-y-6">
+          {/* Flight Number & Cabin Class */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <Input
+              label="Flight number"
+              id="flightNumber"
               placeholder="e.g. PR101"
+              error={errors.flightNumber?.message}
               {...register('flightNumber')}
-              className="w-full px-3.5 py-2.5 border border-gray-300 rounded-lg text-sm uppercase focus:ring-2 focus:ring-blue-500 focus:outline-none"
             />
-            {errors.flightNumber && (
-              <p className="text-xs text-red-600 mt-1">{errors.flightNumber.message}</p>
-            )}
-          </div>
 
-          <div>
-            <label className="block text-xs font-semibold uppercase tracking-wider text-gray-700 mb-1">
-              Seat / Cabin Class
-            </label>
-            <select
+            <Select
+              label="Cabin class"
+              id="seatClass"
+              error={errors.seatClass?.message}
               {...register('seatClass')}
-              className="w-full px-3.5 py-2.5 border border-gray-300 rounded-lg text-sm bg-white focus:ring-2 focus:ring-blue-500 focus:outline-none"
             >
               <option value="Economy">Economy</option>
               <option value="Business">Business</option>
               <option value="First Class">First Class</option>
-            </select>
-            {errors.seatClass && (
-              <p className="text-xs text-red-600 mt-1">{errors.seatClass.message}</p>
-            )}
+            </Select>
           </div>
-        </div>
 
-        {/* Origin */}
-        <div className="border-t border-gray-100 pt-5">
-          <h3 className="text-sm font-semibold text-gray-900 mb-3">Origin Location</h3>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <div className="sm:col-span-2">
-              <label className="block text-xs font-medium text-gray-600 mb-1">City Name</label>
-              <input
-                type="text"
-                placeholder="e.g. Manila"
-                {...register('originCity')}
-                className="w-full px-3.5 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
-              />
-              {errors.originCity && (
-                <p className="text-xs text-red-600 mt-1">{errors.originCity.message}</p>
-              )}
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">Airport Code (3 Letters)</label>
-              <input
-                type="text"
-                maxLength={3}
-                placeholder="MNL"
-                {...register('originCode')}
-                className="w-full px-3.5 py-2.5 border border-gray-300 rounded-lg text-sm uppercase focus:ring-2 focus:ring-blue-500 focus:outline-none"
-              />
-              {errors.originCode && (
-                <p className="text-xs text-red-600 mt-1">{errors.originCode.message}</p>
-              )}
+          {/* Origin */}
+          <div className="border-t border-line pt-6 space-y-4">
+            <h2 className="text-xs font-semibold uppercase tracking-wider text-ink-muted">
+              Origin location
+            </h2>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div className="sm:col-span-2">
+                <Input
+                  label="City name"
+                  id="originCity"
+                  placeholder="e.g. Manila"
+                  error={errors.originCity?.message}
+                  {...register('originCity')}
+                />
+              </div>
+              <div>
+                <Input
+                  label="Airport code (3 letters)"
+                  id="originCode"
+                  maxLength={3}
+                  placeholder="MNL"
+                  error={errors.originCode?.message}
+                  {...register('originCode')}
+                />
+              </div>
             </div>
           </div>
-        </div>
 
-        {/* Destination */}
-        <div className="border-t border-gray-100 pt-5">
-          <h3 className="text-sm font-semibold text-gray-900 mb-3">Destination Location</h3>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <div className="sm:col-span-2">
-              <label className="block text-xs font-medium text-gray-600 mb-1">City Name</label>
-              <input
-                type="text"
-                placeholder="e.g. Cebu"
-                {...register('destinationCity')}
-                className="w-full px-3.5 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
-              />
-              {errors.destinationCity && (
-                <p className="text-xs text-red-600 mt-1">{errors.destinationCity.message}</p>
-              )}
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">Airport Code (3 Letters)</label>
-              <input
-                type="text"
-                maxLength={3}
-                placeholder="CEB"
-                {...register('destinationCode')}
-                className="w-full px-3.5 py-2.5 border border-gray-300 rounded-lg text-sm uppercase focus:ring-2 focus:ring-blue-500 focus:outline-none"
-              />
-              {errors.destinationCode && (
-                <p className="text-xs text-red-600 mt-1">{errors.destinationCode.message}</p>
-              )}
+          {/* Destination */}
+          <div className="border-t border-line pt-6 space-y-4">
+            <h2 className="text-xs font-semibold uppercase tracking-wider text-ink-muted">
+              Destination location
+            </h2>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div className="sm:col-span-2">
+                <Input
+                  label="City name"
+                  id="destinationCity"
+                  placeholder="e.g. Cebu"
+                  error={errors.destinationCity?.message}
+                  {...register('destinationCity')}
+                />
+              </div>
+              <div>
+                <Input
+                  label="Airport code (3 letters)"
+                  id="destinationCode"
+                  maxLength={3}
+                  placeholder="CEB"
+                  error={errors.destinationCode?.message}
+                  {...register('destinationCode')}
+                />
+              </div>
             </div>
           </div>
-        </div>
 
-        {/* Schedule Timings */}
-        <div className="border-t border-gray-100 pt-5">
-          <h3 className="text-sm font-semibold text-gray-900 mb-3">Flight Timings</h3>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-            <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">Departure Time</label>
-              <input
+          {/* Schedule Timings */}
+          <div className="border-t border-line pt-6 space-y-4">
+            <h2 className="text-xs font-semibold uppercase tracking-wider text-ink-muted">
+              Flight timings
+            </h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <Input
+                label="Departure time"
+                id="departureTime"
                 type="datetime-local"
+                error={errors.departureTime?.message}
                 {...register('departureTime')}
-                className="w-full px-3.5 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
               />
-              {errors.departureTime && (
-                <p className="text-xs text-red-600 mt-1">{errors.departureTime.message}</p>
-              )}
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">Arrival Time</label>
-              <input
+
+              <Input
+                label="Arrival time"
+                id="arrivalTime"
                 type="datetime-local"
+                error={errors.arrivalTime?.message}
                 {...register('arrivalTime')}
-                className="w-full px-3.5 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
               />
-              {errors.arrivalTime && (
-                <p className="text-xs text-red-600 mt-1">{errors.arrivalTime.message}</p>
-              )}
             </div>
           </div>
-        </div>
 
-        {/* Capacity, Pricing & Status */}
-        <div className="border-t border-gray-100 pt-5">
-          <h3 className="text-sm font-semibold text-gray-900 mb-3">Capacity & Pricing</h3>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-            <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">Base Price (₱)</label>
-              <input
+          {/* Capacity, Pricing & Status */}
+          <div className="border-t border-line pt-6 space-y-4">
+            <h2 className="text-xs font-semibold uppercase tracking-wider text-ink-muted">
+              Capacity and pricing
+            </h2>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <Input
+                label="Base price (₱)"
+                id="basePrice"
                 type="number"
                 step="any"
                 placeholder="2500"
+                error={errors.basePrice?.message}
                 {...register('basePrice')}
-                className="w-full px-3.5 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
               />
-              {errors.basePrice && (
-                <p className="text-xs text-red-600 mt-1">{errors.basePrice.message}</p>
-              )}
-            </div>
 
-            <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">Total Aircraft Seats</label>
-              <input
+              <Input
+                label="Total aircraft seats"
+                id="totalSeats"
                 type="number"
                 placeholder="150"
+                error={errors.totalSeats?.message}
                 {...register('totalSeats')}
-                className="w-full px-3.5 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
               />
-              {errors.totalSeats && (
-                <p className="text-xs text-red-600 mt-1">{errors.totalSeats.message}</p>
-              )}
-            </div>
 
-            <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">Flight Status</label>
-              <select
+              <Select
+                label="Flight status"
+                id="status"
+                error={errors.status?.message}
                 {...register('status')}
-                className="w-full px-3.5 py-2.5 border border-gray-300 rounded-lg text-sm bg-white focus:ring-2 focus:ring-blue-500 focus:outline-none"
               >
                 <option value="Scheduled">Scheduled</option>
                 <option value="Delayed">Delayed</option>
                 <option value="Cancelled">Cancelled</option>
                 <option value="Completed">Completed</option>
-              </select>
-              {errors.status && (
-                <p className="text-xs text-red-600 mt-1">{errors.status.message}</p>
-              )}
+              </Select>
             </div>
           </div>
-        </div>
 
-        {/* Action buttons */}
-        <div className="flex justify-end space-x-3 pt-6 border-t border-gray-100">
-          <Link
-            to="/admin/flights"
-            className="px-5 py-2.5 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition"
-          >
-            Cancel
-          </Link>
-          <button
-            type="submit"
-            disabled={submitting}
-            className="px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium shadow-sm transition disabled:opacity-50"
-          >
-            {submitting ? 'Saving...' : isEdit ? 'Update Flight' : 'Create Flight'}
-          </button>
-        </div>
+          {/* Action buttons */}
+          <div className="flex justify-end items-center gap-3 pt-6 border-t border-line">
+            <ButtonLink
+              to="/admin/flights"
+              variant="secondary"
+            >
+              Cancel
+            </ButtonLink>
+            <Button
+              type="submit"
+              variant="primary"
+              loading={submitting}
+            >
+              {isEdit ? 'Update flight' : 'Create flight'}
+            </Button>
+          </div>
+        </Card>
       </form>
     </div>
   );

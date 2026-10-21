@@ -1,7 +1,17 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, Link, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
+import { ArrowLeft, ArrowRight, AlertCircle } from 'lucide-react';
 import api from '../api/axios';
 import { useAuth } from '../context/AuthContext';
+import { useDocumentTitle } from '../hooks/useDocumentTitle';
+import { useToast } from '../context/ToastContext';
+import { useConfirm } from '../context/ConfirmContext';
+import { formatPrice, formatDate, formatTime, formatDuration, plural } from '../lib/format';
+import { Button, ButtonLink } from '../components/ui/Button';
+import { Badge, StatusBadge } from '../components/ui/Badge';
+import { Card } from '../components/ui/Card';
+import { EmptyState } from '../components/ui/EmptyState';
+import { DetailSkeleton } from '../components/ui/Skeleton';
 
 const BookingDetails = () => {
   const { id } = useParams();
@@ -12,7 +22,11 @@ const BookingDetails = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [cancelling, setCancelling] = useState(false);
-  const [success, setSuccess] = useState('');
+
+  const toast = useToast();
+  const confirm = useConfirm();
+
+  useDocumentTitle(booking ? `Booking · ${booking.bookingReference}` : 'Booking details');
 
   useEffect(() => {
     const fetchBooking = async () => {
@@ -32,18 +46,22 @@ const BookingDetails = () => {
   }, [id]);
 
   const handleCancel = async () => {
-    if (!window.confirm(`Are you sure you want to cancel booking ${booking.bookingReference}?`)) {
-      return;
-    }
+    const ok = await confirm({
+      title: 'Cancel reservation',
+      description: `Are you sure you want to cancel booking ${booking.bookingReference}? Your seats will be released.`,
+      confirmText: 'Cancel reservation',
+      variant: 'danger'
+    });
+
+    if (!ok) return;
 
     setCancelling(true);
-    setError('');
     try {
-      const response = await api.delete(`/api/bookings/${id}`);
+      await api.delete(`/api/bookings/${id}`);
       setBooking((prev) => ({ ...prev, status: 'Cancelled' }));
-      setSuccess('Booking has been cancelled and seats have been restored.');
+      toast.success('Reservation cancelled.');
     } catch (err) {
-      setError(err.response?.data?.message || 'Failed to cancel booking.');
+      toast.error(err.response?.data?.message || 'Failed to cancel booking.');
     } finally {
       setCancelling(false);
     }
@@ -51,186 +69,186 @@ const BookingDetails = () => {
 
   if (loading) {
     return (
-      <div className="max-w-4xl mx-auto px-4 py-16 text-center">
-        <div className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-blue-600 border-t-transparent"></div>
-        <p className="mt-3 text-sm text-gray-500">Loading reservation receipt...</p>
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
+        <DetailSkeleton />
       </div>
     );
   }
 
   if (error || !booking) {
+    const returnPath = user?.role === 'admin' ? '/admin' : '/my-bookings';
+    const returnLabel = user?.role === 'admin' ? 'Admin dashboard' : 'My bookings';
     return (
-      <div className="max-w-4xl mx-auto px-4 py-16">
-        <div className="bg-red-50 border-l-4 border-red-500 p-6 rounded-lg">
-          <h2 className="text-lg font-bold text-red-800">Booking Access Error</h2>
-          <p className="mt-1 text-sm text-red-700">{error || 'Booking could not be found.'}</p>
-          <Link
-            to={user?.role === 'admin' ? '/admin' : '/my-bookings'}
-            className="mt-4 inline-block bg-red-600 hover:bg-red-700 text-white text-sm font-medium px-4 py-2 rounded-lg"
-          >
-            ← Return to {user?.role === 'admin' ? 'Admin Dashboard' : 'My Bookings'}
-          </Link>
-        </div>
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <EmptyState
+          icon={AlertCircle}
+          title="Booking access error"
+          description={error || 'Booking could not be found.'}
+          action={
+            <ButtonLink to={returnPath} variant="secondary">
+              Return to {returnLabel}
+            </ButtonLink>
+          }
+        />
       </div>
     );
   }
 
   const flight = booking.flight || {};
-  const dep = flight.departureTime ? new Date(flight.departureTime) : null;
-  const arr = flight.arrivalTime ? new Date(flight.arrivalTime) : null;
-
   const isOwner = user && booking.user && (booking.user._id === user._id || booking.user === user._id);
+  const returnPath = user?.role === 'admin' ? '/admin/bookings' : '/my-bookings';
+  const returnLabel = user?.role === 'admin' ? 'All bookings' : 'My bookings';
 
   return (
-    <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
-      <div className="mb-6 flex justify-between items-center">
-        <Link
-          to={user?.role === 'admin' ? '/admin' : '/my-bookings'}
-          className="text-sm font-medium text-gray-600 hover:text-gray-900"
-        >
-          ← Return to {user?.role === 'admin' ? 'Admin' : 'My Bookings'}
-        </Link>
+    <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <ButtonLink to={returnPath} variant="ghost" size="sm">
+          <ArrowLeft className="w-4 h-4 mr-1.5" />
+          Return to {returnLabel}
+        </ButtonLink>
+
         {isOwner && booking.status === 'Confirmed' && (
-          <button
+          <Button
+            variant="danger"
+            size="sm"
+            loading={cancelling}
             onClick={handleCancel}
-            disabled={cancelling}
-            className="bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 text-xs font-semibold px-4 py-2 rounded-lg transition disabled:opacity-50"
           >
-            {cancelling ? 'Cancelling...' : 'Cancel Reservation'}
-          </button>
+            Cancel reservation
+          </Button>
         )}
       </div>
 
-      {success && (
-        <div className="bg-emerald-50 border-l-4 border-emerald-500 p-4 rounded-lg text-emerald-700 text-sm mb-6">
-          {success}
-        </div>
-      )}
-
-      {/* Main Reservation Card */}
-      <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
-        {/* Header Ticket banner */}
-        <div className="bg-gradient-to-r from-blue-700 to-indigo-800 p-6 text-white flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+      <Card className="overflow-hidden">
+        {/* Receipt header */}
+        <div className="p-6 sm:p-8 bg-surface-raised border-b border-line flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
-            <span className="text-xs uppercase tracking-widest text-blue-200 block font-semibold">
-              E-Ticket & Booking Confirmation
+            <span className="text-xs uppercase tracking-wider text-ink-muted block font-medium">
+              E-ticket and booking confirmation
             </span>
-            <div className="flex items-center space-x-3 mt-1">
-              <span className="font-mono text-2xl font-black">{booking.bookingReference}</span>
-              <span
-                className={`text-xs px-3 py-1 rounded-full font-bold uppercase ${
-                  booking.status === 'Confirmed'
-                    ? 'bg-emerald-500 text-white'
-                    : booking.status === 'Cancelled'
-                    ? 'bg-rose-500 text-white'
-                    : 'bg-blue-400 text-blue-950'
-                }`}
-              >
-                {booking.status}
+            <div className="flex items-center gap-3 mt-1.5">
+              <span className="font-mono text-xl sm:text-2xl font-bold tracking-tight text-ink">
+                {booking.bookingReference}
               </span>
+              <StatusBadge status={booking.status} />
             </div>
           </div>
 
-          <div className="text-sm text-blue-100 text-left sm:text-right">
-            <span>Booked on {new Date(booking.bookingDate).toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' })}</span>
+          <div className="text-xs text-ink-muted">
+            Booked on {formatDate(booking.bookingDate)}
           </div>
         </div>
 
-        {/* Flight Information */}
-        <div className="p-8 border-b border-gray-100">
-          <h2 className="text-sm font-bold uppercase tracking-wider text-gray-500 mb-4">
-            Flight Details
+        {/* Flight details */}
+        <div className="p-6 sm:p-8 border-b border-line">
+          <h2 className="text-xs font-semibold uppercase tracking-wider text-ink-muted mb-6">
+            Flight details
           </h2>
+
           {flight.flightNumber ? (
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-center text-center">
               <div className="text-left md:text-center">
-                <span className="text-xs font-medium text-gray-400 uppercase">Departure</span>
-                <div className="text-3xl font-extrabold text-gray-900 mt-1">{flight.origin?.code}</div>
-                <div className="text-sm font-semibold text-gray-700">{flight.origin?.city}</div>
-                <div className="text-xs text-blue-600 font-medium mt-1">
-                  {dep ? `${dep.toLocaleDateString([], { month: 'short', day: 'numeric' })} at ${dep.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}` : ''}
+                <span className="text-xs font-medium text-ink-muted uppercase tracking-wider">Departure</span>
+                <div className="text-2xl font-bold font-mono text-ink mt-1">
+                  {flight.origin?.code}
+                </div>
+                <div className="text-sm text-ink-muted">{flight.origin?.city}</div>
+                <div className="text-sm font-semibold text-accent mt-1">
+                  {flight.departureTime
+                    ? `${formatDate(flight.departureTime)} at ${formatTime(flight.departureTime)}`
+                    : ''}
                 </div>
               </div>
 
               <div className="flex flex-col items-center">
-                <span className="text-xs font-bold text-gray-700 bg-gray-100 px-3 py-1 rounded-full">
-                  {flight.flightNumber}
-                </span>
-                <div className="w-full flex items-center justify-center my-2">
-                  <div className="h-0.5 bg-gray-200 w-full relative">
-                    <span className="absolute -top-2 left-1/2 -translate-x-1/2 text-sm">✈</span>
+                <div className="flex items-center gap-2">
+                  <span className="font-mono text-xs font-semibold text-ink bg-canvas px-2.5 py-0.5 rounded border border-line">
+                    {flight.flightNumber}
+                  </span>
+                  <Badge variant="neutral">{booking.seatClass}</Badge>
+                </div>
+                <div className="w-full flex items-center justify-center my-2 max-w-[140px]">
+                  <div className="h-px bg-line-strong w-full relative">
+                    <ArrowRight className="w-4 h-4 text-ink-muted absolute -top-2 left-1/2 -translate-x-1/2 bg-surface px-0.5" />
                   </div>
                 </div>
-                <span className="text-xs text-gray-500">{booking.seatClass} Class</span>
+                <span className="text-xs font-mono text-ink-muted">
+                  {flight.departureTime && flight.arrivalTime
+                    ? formatDuration(flight.departureTime, flight.arrivalTime)
+                    : 'Non-stop'}
+                </span>
               </div>
 
-              <div className="text-right md:text-center">
-                <span className="text-xs font-medium text-gray-400 uppercase">Arrival</span>
-                <div className="text-3xl font-extrabold text-gray-900 mt-1">{flight.destination?.code}</div>
-                <div className="text-sm font-semibold text-gray-700">{flight.destination?.city}</div>
-                <div className="text-xs text-blue-600 font-medium mt-1">
-                  {arr ? `${arr.toLocaleDateString([], { month: 'short', day: 'numeric' })} at ${arr.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}` : ''}
+              <div className="text-left md:text-center">
+                <span className="text-xs font-medium text-ink-muted uppercase tracking-wider">Arrival</span>
+                <div className="text-2xl font-bold font-mono text-ink mt-1">
+                  {flight.destination?.code}
+                </div>
+                <div className="text-sm text-ink-muted">{flight.destination?.city}</div>
+                <div className="text-sm font-semibold text-accent mt-1">
+                  {flight.arrivalTime
+                    ? `${formatDate(flight.arrivalTime)} at ${formatTime(flight.arrivalTime)}`
+                    : ''}
                 </div>
               </div>
             </div>
           ) : (
-            <div className="text-sm text-gray-500 italic">Flight details unavailable.</div>
+            <div className="text-sm text-ink-muted italic">Flight details unavailable.</div>
           )}
         </div>
 
-        {/* Passenger Manifest */}
-        <div className="p-8 border-b border-gray-100">
-          <h2 className="text-sm font-bold uppercase tracking-wider text-gray-500 mb-4">
-            Passenger Manifest ({booking.passengers?.length || 0})
+        {/* Passenger manifest list */}
+        <div className="p-6 sm:p-8 border-b border-line">
+          <h2 className="text-xs font-semibold uppercase tracking-wider text-ink-muted mb-4">
+            Passenger manifest ({booking.passengers?.length || 0})
           </h2>
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200 text-left text-sm">
-              <thead className="bg-gray-50 text-gray-600 font-semibold uppercase text-xs">
-                <tr>
-                  <th className="px-4 py-3">#</th>
-                  <th className="px-4 py-3">Full Name</th>
-                  <th className="px-4 py-3">Date of Birth</th>
-                  <th className="px-4 py-3">Seat Class</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100">
-                {booking.passengers?.map((passenger, index) => {
-                  const dob = passenger.dateOfBirth ? new Date(passenger.dateOfBirth) : null;
-                  return (
-                    <tr key={index} className="hover:bg-gray-50">
-                      <td className="px-4 py-3 text-gray-400 font-mono text-xs">{index + 1}</td>
-                      <td className="px-4 py-3 font-semibold text-gray-900">
-                        {passenger.firstName} {passenger.lastName}
-                      </td>
-                      <td className="px-4 py-3 text-gray-600">
-                        {dob ? dob.toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' }) : 'N/A'}
-                      </td>
-                      <td className="px-4 py-3 text-gray-600">{booking.seatClass}</td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
+
+          <ul className="divide-y divide-line text-sm">
+            {booking.passengers?.map((passenger, index) => (
+              <li
+                key={index}
+                className="py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2"
+              >
+                <div className="flex items-center gap-3">
+                  <span className="text-xs font-mono text-ink-muted w-6">#{index + 1}</span>
+                  <span className="font-medium text-ink">
+                    {passenger.firstName} {passenger.lastName}
+                  </span>
+                </div>
+                <div className="flex items-center gap-4 text-xs text-ink-muted pl-9 sm:pl-0">
+                  <span>
+                    Born: <strong className="font-normal text-ink">{passenger.dateOfBirth ? formatDate(passenger.dateOfBirth) : 'N/A'}</strong>
+                  </span>
+                  <span>
+                    Class: <strong className="font-normal text-ink">{booking.seatClass}</strong>
+                  </span>
+                </div>
+              </li>
+            ))}
+          </ul>
         </div>
 
         {/* Payment and Billing Summary */}
-        <div className="p-8 bg-gray-50/50 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div className="p-6 sm:p-8 bg-surface-raised flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
-            <span className="text-xs text-gray-500 block">Payment Summary</span>
-            <span className="text-xs text-gray-600">
-              {booking.passengers?.length} passenger(s) × {booking.seatClass} class fare
+            <span className="text-xs text-ink-muted block uppercase tracking-wider font-medium">
+              Payment summary
+            </span>
+            <span className="text-xs text-ink-muted mt-0.5 block">
+              {booking.passengers?.length} {plural(booking.passengers?.length || 1, 'passenger', 'passengers')} × {booking.seatClass} class fare
             </span>
           </div>
 
-          <div className="text-left sm:text-right">
-            <span className="text-xs text-gray-400 block font-semibold uppercase">Total Amount Paid</span>
-            <span className="text-3xl font-black text-blue-600">
-              ₱{booking.totalPrice?.toLocaleString()}
+          <div className="sm:text-right">
+            <span className="text-xs text-ink-muted block uppercase tracking-wider font-medium">
+              Total amount paid
+            </span>
+            <span className="text-2xl sm:text-3xl font-bold font-mono text-accent mt-0.5 block">
+              {formatPrice(booking.totalPrice)}
             </span>
           </div>
         </div>
-      </div>
+      </Card>
     </div>
   );
 };

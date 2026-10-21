@@ -1,10 +1,20 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { useForm, useFieldArray } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import * as yup from 'yup';
+import { ArrowLeft, CheckCircle2, AlertCircle } from 'lucide-react';
 import api from '../api/axios';
 import { useAuth } from '../context/AuthContext';
+import { useDocumentTitle } from '../hooks/useDocumentTitle';
+import { formatPrice, formatDate, formatTime, plural } from '../lib/format';
+import { Button, ButtonLink } from '../components/ui/Button';
+import { Input } from '../components/ui/Input';
+import { Select } from '../components/ui/Select';
+import { Card } from '../components/ui/Card';
+import { Alert } from '../components/ui/Alert';
+import { EmptyState } from '../components/ui/EmptyState';
+import { DetailSkeleton } from '../components/ui/Skeleton';
 
 // Class price multipliers
 const MULTIPLIERS = {
@@ -45,12 +55,13 @@ const BookFlight = () => {
   const [submitting, setSubmitting] = useState(false);
   const [bookingResult, setBookingResult] = useState(null);
 
+  useDocumentTitle(flight ? `Book flight · ${flight.flightNumber}` : 'Book flight');
+
   const {
     register,
     control,
     handleSubmit,
     watch,
-    setValue,
     formState: { errors }
   } = useForm({
     resolver: yupResolver(schema),
@@ -127,26 +138,25 @@ const BookFlight = () => {
 
   if (loading) {
     return (
-      <div className="max-w-4xl mx-auto px-4 py-16 text-center">
-        <div className="inline-block animate-spin rounded-full h-10 w-10 border-4 border-blue-600 border-t-transparent"></div>
-        <p className="mt-3 text-sm text-gray-500">Preparing flight booking...</p>
+      <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
+        <DetailSkeleton />
       </div>
     );
   }
 
   if (error && !flight) {
     return (
-      <div className="max-w-4xl mx-auto px-4 py-16">
-        <div className="bg-red-50 border-l-4 border-red-500 p-6 rounded-lg">
-          <h2 className="text-lg font-bold text-red-800">Flight Unavailable</h2>
-          <p className="mt-1 text-sm text-red-700">{error}</p>
-          <Link
-            to="/flights"
-            className="mt-4 inline-block bg-red-600 text-white text-sm font-medium px-4 py-2 rounded-lg"
-          >
-            ← Back to Flights
-          </Link>
-        </div>
+      <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <EmptyState
+          icon={AlertCircle}
+          title="Flight unavailable"
+          description={error}
+          action={
+            <ButtonLink to="/flights" variant="secondary">
+              Back to flights
+            </ButtonLink>
+          }
+        />
       </div>
     );
   }
@@ -154,68 +164,66 @@ const BookFlight = () => {
   // Confirmation view after booking
   if (bookingResult) {
     return (
-      <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden text-center p-8 sm:p-12">
-          <div className="w-16 h-16 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto text-3xl mb-4">
-            ✓
+      <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <Card className="p-8 sm:p-12 text-center space-y-6">
+          <div className="w-12 h-12 bg-accent/10 text-accent rounded-full flex items-center justify-center mx-auto">
+            <CheckCircle2 className="w-6 h-6" />
           </div>
-          <h1 className="text-3xl font-extrabold text-gray-900">Reservation Confirmed!</h1>
-          <p className="mt-2 text-sm text-gray-600">
-            Thank you for booking with us. Your reservation is safely secured in our system.
-          </p>
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight text-ink">Reservation confirmed</h1>
+            <p className="mt-1 text-sm text-ink-muted">
+              Thank you for booking with us. Your reservation is safely secured in our system.
+            </p>
+          </div>
 
           {/* Reference badge */}
-          <div className="my-8 bg-blue-50 border-2 border-dashed border-blue-300 rounded-xl p-6 max-w-md mx-auto">
-            <span className="text-xs font-semibold text-blue-700 uppercase tracking-widest block mb-1">
-              Booking Reference Code
+          <div className="my-6 bg-canvas border-2 border-dashed border-line-strong rounded-lg p-6 max-w-sm mx-auto">
+            <span className="text-xs font-medium text-ink-muted uppercase tracking-wider block mb-1">
+              Booking reference
             </span>
-            <span className="font-mono text-3xl font-black text-blue-900 tracking-wider">
+            <span className="font-mono text-2xl sm:text-3xl font-bold tracking-wider text-accent block">
               {bookingResult.bookingReference}
             </span>
-            <p className="text-xs text-blue-600 mt-2">
+            <p className="text-xs text-ink-muted mt-2">
               Save this reference code to view or manage your reservation anytime.
             </p>
           </div>
 
           {/* Summary Box */}
-          <div className="bg-gray-50 rounded-xl p-6 text-left max-w-lg mx-auto text-sm space-y-3 border border-gray-200">
+          <div className="bg-canvas rounded-lg p-5 text-left max-w-md mx-auto text-sm space-y-2.5 border border-line">
             <div className="flex justify-between">
-              <span className="text-gray-500">Flight:</span>
-              <span className="font-semibold text-gray-900">
+              <span className="text-ink-muted">Flight</span>
+              <span className="font-semibold text-ink font-mono">
                 {flight.flightNumber} ({flight.origin.code} → {flight.destination.code})
               </span>
             </div>
             <div className="flex justify-between">
-              <span className="text-gray-500">Class:</span>
-              <span className="font-semibold text-gray-900">{bookingResult.seatClass}</span>
+              <span className="text-ink-muted">Cabin class</span>
+              <span className="font-semibold text-ink">{bookingResult.seatClass}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-gray-500">Passengers:</span>
-              <span className="font-semibold text-gray-900">{bookingResult.passengers?.length} passenger(s)</span>
+              <span className="text-ink-muted">Passengers</span>
+              <span className="font-semibold text-ink">
+                {bookingResult.passengers?.length} {plural(bookingResult.passengers?.length || 1, 'passenger', 'passengers')}
+              </span>
             </div>
-            <div className="flex justify-between border-t border-gray-200 pt-3">
-              <span className="text-gray-700 font-semibold">Total Price:</span>
-              <span className="font-bold text-lg text-blue-600">
-                ₱{bookingResult.totalPrice?.toLocaleString()}
+            <div className="flex justify-between border-t border-line pt-2.5">
+              <span className="text-ink font-semibold">Total price</span>
+              <span className="font-bold text-lg font-mono text-accent">
+                {formatPrice(bookingResult.totalPrice)}
               </span>
             </div>
           </div>
 
-          <div className="mt-8 flex flex-col sm:flex-row justify-center gap-4">
-            <Link
-              to="/my-bookings"
-              className="bg-blue-600 hover:bg-blue-700 text-white font-medium px-6 py-3 rounded-xl transition shadow-sm"
-            >
-              View My Bookings
-            </Link>
-            <Link
-              to="/flights"
-              className="bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium px-6 py-3 rounded-xl transition"
-            >
-              Book Another Flight
-            </Link>
+          <div className="pt-2 flex flex-col sm:flex-row justify-center gap-3">
+            <ButtonLink to="/my-bookings" variant="primary">
+              View my bookings
+            </ButtonLink>
+            <ButtonLink to="/flights" variant="secondary">
+              Book another flight
+            </ButtonLink>
           </div>
-        </div>
+        </Card>
       </div>
     );
   }
@@ -225,182 +233,158 @@ const BookFlight = () => {
   const count = watchedPassengers.length || 1;
   const estimatedTotal = (flight?.basePrice || 0) * multiplier * count;
 
-  const dep = new Date(flight.departureTime);
-
   return (
-    <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
-      <div className="mb-6">
-        <Link to={`/flights/${flight._id}`} className="text-sm font-medium text-gray-600 hover:text-gray-900">
-          ← Back to Flight Details
-        </Link>
-        <h1 className="text-3xl font-extrabold text-gray-900 mt-2">Book Your Flight</h1>
-        <p className="text-sm text-gray-500">Enter passenger information and confirm your reservation.</p>
+    <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
+      <div>
+        <ButtonLink to={`/flights/${flight._id}`} variant="ghost" size="sm">
+          <ArrowLeft className="w-4 h-4 mr-1.5" />
+          Back to flight details
+        </ButtonLink>
+        <h1 className="text-2xl font-bold tracking-tight text-ink mt-3">Book your flight</h1>
+        <p className="text-sm text-ink-muted">Enter passenger information and confirm your reservation.</p>
       </div>
 
-      {error && (
-        <div className="bg-red-50 border-l-4 border-red-500 p-4 rounded-lg text-red-700 text-sm mb-6">
-          {error}
-        </div>
-      )}
+      {error && <Alert variant="danger">{error}</Alert>}
 
       {/* Flight summary card */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-8 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+      <Card className="p-5 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <div className="flex items-center space-x-2">
-            <span className="font-mono text-sm font-bold bg-blue-100 text-blue-800 px-2.5 py-1 rounded">
+          <div className="flex items-center gap-2">
+            <span className="font-mono text-sm font-bold text-ink">
               {flight.flightNumber}
             </span>
-            <span className="text-lg font-bold text-gray-900">
+            <span className="text-base font-semibold text-ink">
               {flight.origin.city} ({flight.origin.code}) → {flight.destination.city} ({flight.destination.code})
             </span>
           </div>
-          <p className="text-sm text-gray-500 mt-1">
-            Departure: {dep.toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })} at{' '}
-            {dep.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+          <p className="text-sm text-ink-muted mt-1">
+            {formatDate(flight.departureTime)} at {formatTime(flight.departureTime)}
           </p>
         </div>
 
-        <div className="text-right">
-          <span className="text-xs text-gray-400 block">Base Fare</span>
-          <span className="text-xl font-extrabold text-gray-900">₱{flight.basePrice.toLocaleString()}</span>
-          <span className="text-xs text-emerald-600 block mt-0.5">
-            {flight.availableSeats} seat(s) available
+        <div className="sm:text-right">
+          <span className="text-xs text-ink-muted block">Base fare</span>
+          <span className="text-lg font-bold font-mono text-ink">
+            {formatPrice(flight.basePrice)}
+          </span>
+          <span className="text-xs text-ink-muted block mt-0.5">
+            {flight.availableSeats} {plural(flight.availableSeats, 'seat', 'seats')} available
           </span>
         </div>
-      </div>
+      </Card>
 
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-8">
+      <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
         {/* Class and Passenger Count selection */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-          <h2 className="text-base font-bold text-gray-900 mb-4">1. Booking Options</h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-            <div>
-              <label className="block text-xs font-semibold uppercase tracking-wider text-gray-700 mb-1">
-                Cabin Class
-              </label>
-              <select
-                {...register('seatClass')}
-                className="w-full px-3.5 py-2.5 border border-gray-300 rounded-lg text-sm bg-white focus:ring-2 focus:ring-blue-500 focus:outline-none"
-              >
-                <option value="Economy">Economy (1x base price)</option>
-                <option value="Business">Business (2x base price)</option>
-                <option value="First Class">First Class (3x base price)</option>
-              </select>
-            </div>
+        <Card className="p-6 space-y-4">
+          <h2 className="text-base font-semibold text-ink">1. Booking options</h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <Select
+              label="Cabin class"
+              id="seatClass"
+              {...register('seatClass')}
+            >
+              <option value="Economy">Economy (1× base price)</option>
+              <option value="Business">Business (2× base price)</option>
+              <option value="First Class">First Class (3× base price)</option>
+            </Select>
 
-            <div>
-              <label className="block text-xs font-semibold uppercase tracking-wider text-gray-700 mb-1">
-                Number of Passengers (1-9)
-              </label>
-              <select
-                value={fields.length}
-                onChange={(e) => handlePassengerCountChange(e.target.value)}
-                className="w-full px-3.5 py-2.5 border border-gray-300 rounded-lg text-sm bg-white focus:ring-2 focus:ring-blue-500 focus:outline-none"
-              >
-                {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((num) => (
-                  <option key={num} value={num} disabled={num > flight.availableSeats}>
-                    {num} Passenger{num > 1 ? 's' : ''} {num > flight.availableSeats ? '(Not enough seats)' : ''}
-                  </option>
-                ))}
-              </select>
-            </div>
+            <Select
+              label="Number of passengers"
+              id="passengerCount"
+              value={fields.length}
+              onChange={(e) => handlePassengerCountChange(e.target.value)}
+            >
+              {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((num) => (
+                <option key={num} value={num} disabled={num > flight.availableSeats}>
+                  {num} {plural(num, 'passenger', 'passengers')} {num > flight.availableSeats ? '(not enough seats)' : ''}
+                </option>
+              ))}
+            </Select>
           </div>
-        </div>
+        </Card>
 
         {/* Passenger Information Forms */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-          <h2 className="text-base font-bold text-gray-900 mb-4">2. Passenger Information</h2>
+        <Card className="p-6 space-y-6">
+          <h2 className="text-base font-semibold text-ink">2. Passenger information</h2>
 
           <div className="space-y-6">
             {fields.map((field, index) => (
-              <div key={field.id} className="p-4 rounded-lg border border-gray-200 bg-gray-50/50">
-                <div className="flex justify-between items-center mb-3">
-                  <span className="text-xs font-bold uppercase tracking-wider text-blue-700">
+              <div
+                key={field.id}
+                className={index > 0 ? 'pt-6 border-t border-line space-y-4' : 'space-y-4'}
+              >
+                <div className="flex justify-between items-center">
+                  <span className="text-xs font-semibold uppercase tracking-wider text-accent">
                     Passenger #{index + 1}
                   </span>
                   {fields.length > 1 && (
-                    <button
+                    <Button
                       type="button"
+                      variant="ghost"
+                      size="sm"
                       onClick={() => remove(index)}
-                      className="text-xs text-rose-600 hover:text-rose-800 font-medium"
+                      className="text-danger hover:text-danger"
                     >
                       Remove
-                    </button>
+                    </Button>
                   )}
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                  <div>
-                    <label className="block text-xs font-medium text-gray-700 mb-1">First Name</label>
-                    <input
-                      type="text"
-                      placeholder="e.g. Juan"
-                      {...register(`passengers.${index}.firstName`)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none bg-white"
-                    />
-                    {errors.passengers?.[index]?.firstName && (
-                      <p className="text-xs text-red-600 mt-1">
-                        {errors.passengers[index].firstName.message}
-                      </p>
-                    )}
-                  </div>
+                  <Input
+                    label="First name"
+                    id={`passengers.${index}.firstName`}
+                    placeholder="e.g. Juan"
+                    error={errors.passengers?.[index]?.firstName?.message}
+                    {...register(`passengers.${index}.firstName`)}
+                  />
 
-                  <div>
-                    <label className="block text-xs font-medium text-gray-700 mb-1">Last Name</label>
-                    <input
-                      type="text"
-                      placeholder="e.g. Dela Cruz"
-                      {...register(`passengers.${index}.lastName`)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none bg-white"
-                    />
-                    {errors.passengers?.[index]?.lastName && (
-                      <p className="text-xs text-red-600 mt-1">
-                        {errors.passengers[index].lastName.message}
-                      </p>
-                    )}
-                  </div>
+                  <Input
+                    label="Last name"
+                    id={`passengers.${index}.lastName`}
+                    placeholder="e.g. Dela Cruz"
+                    error={errors.passengers?.[index]?.lastName?.message}
+                    {...register(`passengers.${index}.lastName`)}
+                  />
 
-                  <div>
-                    <label className="block text-xs font-medium text-gray-700 mb-1">Date of Birth</label>
-                    <input
-                      type="date"
-                      {...register(`passengers.${index}.dateOfBirth`)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none bg-white"
-                    />
-                    {errors.passengers?.[index]?.dateOfBirth && (
-                      <p className="text-xs text-red-600 mt-1">
-                        {errors.passengers[index].dateOfBirth.message}
-                      </p>
-                    )}
-                  </div>
+                  <Input
+                    label="Date of birth"
+                    id={`passengers.${index}.dateOfBirth`}
+                    type="date"
+                    error={errors.passengers?.[index]?.dateOfBirth?.message}
+                    {...register(`passengers.${index}.dateOfBirth`)}
+                  />
                 </div>
               </div>
             ))}
           </div>
-        </div>
+        </Card>
 
         {/* Price Breakdown and Submit */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 flex flex-col sm:flex-row justify-between items-center gap-6">
-          <div className="w-full sm:w-auto text-left">
-            <span className="text-xs text-gray-500 uppercase tracking-wider block font-semibold">
-              Estimated Total Price
+        <Card className="p-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6">
+          <div>
+            <span className="text-xs font-medium text-ink-muted uppercase tracking-wider block">
+              Estimated total price
             </span>
-            <div className="text-3xl font-black text-blue-600 mt-1">
-              ₱{estimatedTotal.toLocaleString()}
+            <div className="text-2xl sm:text-3xl font-bold font-mono text-accent mt-1">
+              {formatPrice(estimatedTotal)}
             </div>
-            <p className="text-xs text-gray-500 mt-0.5">
-              ₱{flight.basePrice.toLocaleString()} base × {multiplier}x class × {count} passenger(s)
+            <p className="text-xs text-ink-muted mt-0.5">
+              {formatPrice(flight.basePrice)} base × {multiplier}× class × {count} {plural(count, 'passenger', 'passengers')}
             </p>
           </div>
 
-          <button
+          <Button
             type="submit"
-            disabled={submitting || flight.availableSeats < count}
-            className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white font-semibold px-8 py-3.5 rounded-xl shadow-md transition disabled:opacity-50 text-base"
+            variant="primary"
+            size="lg"
+            loading={submitting}
+            disabled={flight.availableSeats < count}
+            className="w-full sm:w-auto"
           >
-            {submitting ? 'Confirming Reservation...' : 'Confirm & Book Reservation'}
-          </button>
-        </div>
+            Confirm reservation
+          </Button>
+        </Card>
       </form>
     </div>
   );

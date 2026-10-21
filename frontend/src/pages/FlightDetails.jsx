@@ -1,7 +1,16 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, Link, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
+import { ArrowLeft, ArrowRight, AlertCircle } from 'lucide-react';
 import api from '../api/axios';
 import { useAuth } from '../context/AuthContext';
+import { useDocumentTitle } from '../hooks/useDocumentTitle';
+import { formatPrice, formatDate, formatTime, formatDuration } from '../lib/format';
+import { Button, ButtonLink } from '../components/ui/Button';
+import { Badge, StatusBadge } from '../components/ui/Badge';
+import { Card } from '../components/ui/Card';
+import { Alert } from '../components/ui/Alert';
+import { EmptyState } from '../components/ui/EmptyState';
+import { DetailSkeleton } from '../components/ui/Skeleton';
 
 const FlightDetails = () => {
   const { id } = useParams();
@@ -11,6 +20,12 @@ const FlightDetails = () => {
   const [flight, setFlight] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+
+  useDocumentTitle(
+    flight
+      ? `${flight.flightNumber} · ${flight.origin.code} to ${flight.destination.code}`
+      : 'Flight details'
+  );
 
   useEffect(() => {
     const fetchFlight = async () => {
@@ -31,189 +46,158 @@ const FlightDetails = () => {
 
   if (loading) {
     return (
-      <div className="max-w-4xl mx-auto px-4 py-16 text-center">
-        <div className="inline-block animate-spin rounded-full h-10 w-10 border-4 border-blue-600 border-t-transparent"></div>
-        <p className="mt-3 text-sm text-gray-500">Loading flight details...</p>
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
+        <DetailSkeleton />
       </div>
     );
   }
 
   if (error || !flight) {
     return (
-      <div className="max-w-4xl mx-auto px-4 py-16">
-        <div className="bg-red-50 border-l-4 border-red-500 p-6 rounded-lg">
-          <h2 className="text-lg font-bold text-red-800">Flight Not Found</h2>
-          <p className="mt-1 text-sm text-red-700">{error || 'Unable to locate flight with this ID.'}</p>
-          <Link
-            to="/flights"
-            className="mt-4 inline-block bg-red-600 hover:bg-red-700 text-white text-sm font-medium px-4 py-2 rounded-lg transition"
-          >
-            ← Back to Flights
-          </Link>
-        </div>
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <EmptyState
+          icon={AlertCircle}
+          title="Flight not found"
+          description={error || 'Unable to locate flight with this ID.'}
+          action={
+            <ButtonLink to="/flights" variant="secondary">
+              Back to flights
+            </ButtonLink>
+          }
+        />
       </div>
     );
   }
 
-  const depDate = new Date(flight.departureTime);
-  const arrDate = new Date(flight.arrivalTime);
-
-  const formattedDepTime = depDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-  const formattedArrTime = arrDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-  const formattedDate = depDate.toLocaleDateString([], {
-    weekday: 'long',
-    month: 'long',
-    day: 'numeric',
-    year: 'numeric'
-  });
-
-  const durationMs = Math.max(0, arrDate - depDate);
-  const durationHrs = Math.floor(durationMs / (1000 * 60 * 60));
-  const durationMins = Math.floor((durationMs % (1000 * 60 * 60)) / (1000 * 60));
-
   const isBookable = flight.status === 'Scheduled' && flight.availableSeats > 0;
 
   return (
-    <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
-      {/* Back button */}
-      <div className="mb-6">
-        <Link
-          to="/flights"
-          className="inline-flex items-center text-sm font-medium text-gray-600 hover:text-gray-900"
-        >
-          ← Back to Flight Search
-        </Link>
+    <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
+      <div>
+        <ButtonLink to="/flights" variant="ghost" size="sm">
+          <ArrowLeft className="w-4 h-4 mr-1.5" />
+          Back to flights
+        </ButtonLink>
       </div>
 
-      <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
-        {/* Header banner */}
-        <div className="bg-gradient-to-r from-blue-600 to-indigo-700 p-6 text-white flex flex-wrap justify-between items-center gap-4">
-          <div>
-            <div className="flex items-center space-x-3">
-              <span className="font-mono text-lg font-bold bg-white/20 px-3 py-1 rounded backdrop-blur-sm">
-                {flight.flightNumber}
-              </span>
-              <span className="text-sm font-medium bg-white/10 px-2.5 py-1 rounded">
-                {flight.seatClass || 'Economy'}
-              </span>
+      <Card className="p-6 sm:p-8 space-y-8">
+        {/* Header row */}
+        <div className="flex flex-wrap items-center justify-between gap-4 pb-6 border-b border-line">
+          <div className="flex items-center gap-3">
+            <span className="font-mono text-xl font-bold tracking-tight text-ink">
+              {flight.flightNumber}
+            </span>
+            <Badge variant="neutral">{flight.seatClass || 'Economy'}</Badge>
+            <StatusBadge status={flight.status} />
+          </div>
+          <span className="text-sm text-ink-muted">
+            {formatDate(flight.departureTime)}
+          </span>
+        </div>
+
+        {/* Route breakdown */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-center text-center">
+          <div className="text-left md:text-center">
+            <span className="text-xs font-medium text-ink-muted uppercase tracking-wider">Departure</span>
+            <div className="text-3xl font-bold tracking-tight text-ink mt-1 font-mono">
+              {flight.origin.code}
             </div>
-            <p className="mt-2 text-sm text-blue-100">Scheduled on {formattedDate}</p>
+            <div className="text-sm text-ink-muted">{flight.origin.city}</div>
+            <div className="text-base font-semibold text-accent mt-1">
+              {formatTime(flight.departureTime)}
+            </div>
           </div>
 
-          <div>
-            <span
-              className={`text-xs uppercase tracking-wider px-3 py-1 rounded-full font-bold shadow-sm ${
-                flight.status === 'Scheduled'
-                  ? 'bg-emerald-500 text-white'
-                  : flight.status === 'Delayed'
-                  ? 'bg-amber-400 text-gray-900'
-                  : flight.status === 'Cancelled'
-                  ? 'bg-rose-500 text-white'
-                  : 'bg-gray-500 text-white'
-              }`}
-            >
-              {flight.status}
+          <div className="flex flex-col items-center">
+            <span className="text-xs font-mono text-ink-muted">
+              {formatDuration(flight.departureTime, flight.arrivalTime)}
             </span>
+            <div className="w-full flex items-center justify-center my-2 max-w-[160px]">
+              <div className="h-px bg-line-strong w-full relative">
+                <ArrowRight className="w-4 h-4 text-ink-muted absolute -top-2 left-1/2 -translate-x-1/2 bg-surface px-0.5" />
+              </div>
+            </div>
+            <span className="text-xs text-ink-muted">Non-stop</span>
+          </div>
+
+          <div className="text-left md:text-center">
+            <span className="text-xs font-medium text-ink-muted uppercase tracking-wider">Arrival</span>
+            <div className="text-3xl font-bold tracking-tight text-ink mt-1 font-mono">
+              {flight.destination.code}
+            </div>
+            <div className="text-sm text-ink-muted">{flight.destination.city}</div>
+            <div className="text-base font-semibold text-accent mt-1">
+              {formatTime(flight.arrivalTime)}
+            </div>
           </div>
         </div>
 
-        {/* Flight Route and Timings */}
-        <div className="p-8">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-center text-center pb-8 border-b border-gray-100">
-            <div className="text-left md:text-center">
-              <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Departure</span>
-              <div className="text-3xl font-extrabold text-gray-900 mt-1">{flight.origin.code}</div>
-              <div className="text-base font-medium text-gray-700">{flight.origin.city}</div>
-              <div className="text-sm text-blue-600 font-semibold mt-1">{formattedDepTime}</div>
-            </div>
+        {/* Facts grid */}
+        <dl className="grid grid-cols-2 sm:grid-cols-4 gap-4 py-6 border-y border-line">
+          <div>
+            <dt className="text-xs text-ink-muted">Base fare</dt>
+            <dd className="text-lg font-bold font-mono text-ink mt-0.5">
+              {formatPrice(flight.basePrice)}
+            </dd>
+          </div>
+          <div>
+            <dt className="text-xs text-ink-muted">Available seats</dt>
+            <dd className="text-lg font-semibold text-ink mt-0.5">
+              {flight.availableSeats} of {flight.totalSeats}
+            </dd>
+          </div>
+          <div>
+            <dt className="text-xs text-ink-muted">Cabin class</dt>
+            <dd className="text-lg font-semibold text-ink mt-0.5">
+              {flight.seatClass || 'Economy'}
+            </dd>
+          </div>
+          <div>
+            <dt className="text-xs text-ink-muted">Flight status</dt>
+            <dd className="text-lg font-semibold text-ink mt-0.5">
+              {flight.status}
+            </dd>
+          </div>
+        </dl>
 
-            <div className="flex flex-col items-center">
-              <span className="text-xs text-gray-400 font-medium">Duration: {durationHrs}h {durationMins}m</span>
-              <div className="w-full flex items-center justify-center my-2">
-                <div className="h-0.5 bg-gray-200 w-full relative">
-                  <span className="absolute -top-2 left-1/2 -translate-x-1/2 text-sm">✈</span>
-                </div>
-              </div>
-              <span className="text-xs text-emerald-600 font-medium bg-emerald-50 px-2 py-0.5 rounded">
-                Non-stop flight
-              </span>
-            </div>
-
-            <div className="text-right md:text-center">
-              <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Arrival</span>
-              <div className="text-3xl font-extrabold text-gray-900 mt-1">{flight.destination.code}</div>
-              <div className="text-base font-medium text-gray-700">{flight.destination.city}</div>
-              <div className="text-sm text-blue-600 font-semibold mt-1">{formattedArrTime}</div>
-            </div>
+        {/* Action row */}
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pt-2">
+          <div>
+            <span className="text-xs text-ink-muted block">Base price per passenger</span>
+            <span className="text-2xl font-bold font-mono text-accent">
+              {formatPrice(flight.basePrice)}
+            </span>
           </div>
 
-          {/* Details breakdown */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 py-6 border-b border-gray-100 text-sm">
-            <div>
-              <span className="text-xs text-gray-500 block">Base Fare</span>
-              <span className="text-lg font-bold text-gray-900">₱{flight.basePrice.toLocaleString()}</span>
-            </div>
-            <div>
-              <span className="text-xs text-gray-500 block">Available Seats</span>
-              <span className={`text-lg font-bold ${flight.availableSeats > 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
-                {flight.availableSeats} / {flight.totalSeats}
-              </span>
-            </div>
-            <div>
-              <span className="text-xs text-gray-500 block">Cabin Class</span>
-              <span className="text-lg font-bold text-gray-900">{flight.seatClass || 'Economy'}</span>
-            </div>
-            <div>
-              <span className="text-xs text-gray-500 block">Aircraft Status</span>
-              <span className="text-lg font-bold text-gray-900">{flight.status}</span>
-            </div>
-          </div>
-
-          {/* Action Area */}
-          <div className="mt-8 flex flex-col sm:flex-row items-center justify-between gap-4">
-            <div>
-              <span className="text-xs text-gray-500 block">Total Base Price per Passenger</span>
-              <span className="text-2xl font-black text-blue-600">₱{flight.basePrice.toLocaleString()}</span>
-            </div>
-
-            {/* If logged out -> redirect to /login */}
+          <div className="w-full sm:w-auto">
             {!user && (
-              <button
-                onClick={() => navigate('/login')}
-                className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white font-medium px-8 py-3 rounded-xl transition shadow-md"
-              >
-                Sign In to Book This Flight
-              </button>
+              <Button onClick={() => navigate('/login')} variant="primary" size="lg" className="w-full sm:w-auto">
+                Sign in to book
+              </Button>
             )}
 
-            {/* If passenger -> show Book button */}
             {user && user.role === 'passenger' && (
               isBookable ? (
-                <Link
-                  to={`/book/${flight._id}`}
-                  className="w-full sm:w-auto text-center bg-blue-600 hover:bg-blue-700 text-white font-semibold px-8 py-3 rounded-xl transition shadow-md"
-                >
-                  Book This Flight →
-                </Link>
+                <ButtonLink to={`/book/${flight._id}`} variant="primary" size="lg" className="w-full sm:w-auto">
+                  Book this flight
+                </ButtonLink>
               ) : (
-                <button
-                  disabled
-                  className="w-full sm:w-auto bg-gray-200 text-gray-500 font-semibold px-8 py-3 rounded-xl cursor-not-allowed"
-                >
-                  {flight.status !== 'Scheduled' ? `Flight is ${flight.status}` : 'No Seats Available'}
-                </button>
+                <Button disabled size="lg" className="w-full sm:w-auto">
+                  {flight.status !== 'Scheduled'
+                    ? `Flight is ${flight.status.toLowerCase()}`
+                    : 'Sold out'}
+                </Button>
               )
             )}
 
-            {/* If admin -> do not show Book button */}
             {user && user.role === 'admin' && (
-              <div className="text-sm bg-purple-50 text-purple-800 border border-purple-200 px-4 py-2 rounded-lg font-medium">
-                Admin mode: Booking is restricted to passenger accounts.
-              </div>
+              <Alert variant="info" className="text-xs">
+                Admin mode: booking is restricted to passenger accounts.
+              </Alert>
             )}
           </div>
         </div>
-      </div>
+      </Card>
     </div>
   );
 };
