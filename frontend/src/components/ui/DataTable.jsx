@@ -4,11 +4,18 @@ import { cn } from '../../lib/cn';
 
 export const DataTable = ({
   columns = [],
-  rows = [],
+  data,
+  rows: rowsProp = [],
+  keyField,
   rowKey,
   mobileCard,
   className = ''
 }) => {
+  // Support both `data`/`keyField` (used by admin pages) and `rows`/`rowKey`
+  const rows = data || rowsProp;
+  const resolveKey = keyField
+    ? (row, index) => row[keyField] ?? index
+    : rowKey;
   return (
     <div className={className}>
       {/* Desktop View */}
@@ -35,7 +42,7 @@ export const DataTable = ({
               </thead>
               <tbody className="divide-y divide-line">
                 {rows.map((row, index) => {
-                  const key = rowKey ? rowKey(row, index) : row._id || index;
+                  const key = resolveKey ? resolveKey(row, index) : row._id || index;
                   return (
                     <tr key={key} className="hover:bg-surface-muted/50 transition-colors">
                       {columns.map((col) => (
@@ -64,7 +71,7 @@ export const DataTable = ({
         <div className="md:hidden print:hidden">
           <ul className="space-y-3">
             {rows.map((row, index) => {
-              const key = rowKey ? rowKey(row, index) : row._id || index;
+              const key = resolveKey ? resolveKey(row, index) : row._id || index;
               return (
                 <li key={key}>
                   <Card className="p-4">
