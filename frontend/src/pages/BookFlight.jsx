@@ -86,6 +86,9 @@ const BookFlight = () => {
       try {
         const response = await api.get(`/api/flights/${id}`);
         setFlight(response.data);
+        if (response.data?.departureTime && new Date(response.data.departureTime) <= new Date()) {
+          setError('This flight has already departed and cannot be booked.');
+        }
       } catch (err) {
         setError(err.response?.data?.message || 'Failed to fetch flight details');
       } finally {
@@ -101,19 +104,33 @@ const BookFlight = () => {
     const target = Math.max(1, Math.min(9, Number(newCount)));
     const current = fields.length;
 
+    if (target === current) return;
+
     if (target > current) {
-      for (let i = current; i < target; i++) {
-        append({ firstName: '', lastName: '', dateOfBirth: '' });
-      }
+      const needed = target - current;
+      const additional = Array.from({ length: needed }, () => ({
+        firstName: '',
+        lastName: '',
+        dateOfBirth: ''
+      }));
+      append(additional);
     } else if (target < current) {
+      const indicesToRemove = [];
       for (let i = current - 1; i >= target; i--) {
-        remove(i);
+        indicesToRemove.push(i);
       }
+      remove(indicesToRemove);
     }
   };
 
   const onSubmit = async (data) => {
     setError('');
+
+    if (flight?.departureTime && new Date(flight.departureTime) <= new Date()) {
+      setError('This flight has already departed and cannot be booked.');
+      return;
+    }
+
     setSubmitting(true);
 
     try {
@@ -379,7 +396,7 @@ const BookFlight = () => {
             variant="primary"
             size="lg"
             loading={submitting}
-            disabled={flight.availableSeats < count}
+            disabled={flight.availableSeats < count || (flight.departureTime && new Date(flight.departureTime) <= new Date())}
             className="w-full sm:w-auto"
           >
             Confirm reservation

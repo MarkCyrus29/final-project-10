@@ -69,7 +69,8 @@ const FlightDetails = () => {
     );
   }
 
-  const isBookable = flight.status === 'Scheduled' && flight.availableSeats > 0;
+  const isDeparted = flight.departureTime ? new Date(flight.departureTime) <= new Date() : false;
+  const isBookable = flight.status === 'Scheduled' && flight.availableSeats > 0 && !isDeparted;
 
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
@@ -185,6 +186,8 @@ const FlightDetails = () => {
                 <Button disabled size="lg" className="w-full sm:w-auto">
                   {flight.status !== 'Scheduled'
                     ? `Flight is ${flight.status.toLowerCase()}`
+                    : isDeparted
+                    ? 'Flight has departed'
                     : 'Sold out'}
                 </Button>
               )

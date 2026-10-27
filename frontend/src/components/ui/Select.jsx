@@ -181,8 +181,6 @@ export const Select = forwardRef(({
 
     if (nativeSelectRef.current) {
       nativeSelectRef.current.value = optValue;
-      const event = new Event('change', { bubbles: true });
-      nativeSelectRef.current.dispatchEvent(event);
     }
 
     if (onChange) {
@@ -191,7 +189,8 @@ export const Select = forwardRef(({
           value: optValue,
           name,
           id
-        }
+        },
+        type: 'change'
       });
     }
   };
@@ -269,7 +268,6 @@ export const Select = forwardRef(({
         tabIndex={-1}
         aria-hidden="true"
         className="sr-only pointer-events-none"
-        onChange={onChange}
         onBlur={onBlur}
         {...props}
       >

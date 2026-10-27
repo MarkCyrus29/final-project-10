@@ -5,11 +5,11 @@ dotenv.config();
 
 const Flight = require('./models/Flight');
 
-// Build a date N days from today at a given UTC hour
-const daysFromNow = (days, hour) => {
+// Build a date N days from today at a given hour and minute (local time)
+const daysFromNow = (days, hour = 8, minute = 0) => {
   const date = new Date();
-  date.setUTCDate(date.getUTCDate() + days);
-  date.setUTCHours(hour, 0, 0, 0);
+  date.setDate(date.getDate() + days);
+  date.setHours(hour, minute, 0, 0);
   return date;
 };
 
@@ -18,16 +18,16 @@ const plusHours = (date, hours) => new Date(date.getTime() + hours * 60 * 60 * 1
 
 const city = (name, code) => ({ city: name, code });
 
-// 8 sample flights on different routes and dates
+// 8 sample flights on different routes with future departure dates
 const sampleFlights = [
-  { flightNumber: 'PR101', origin: city('Manila', 'MNL'), destination: city('Cebu', 'CEB'), dep: daysFromNow(3, 2), hours: 1.5, basePrice: 2500, totalSeats: 150 },
-  { flightNumber: 'PR102', origin: city('Cebu', 'CEB'), destination: city('Manila', 'MNL'), dep: daysFromNow(3, 9), hours: 1.5, basePrice: 2600, totalSeats: 150 },
-  { flightNumber: 'PR201', origin: city('Manila', 'MNL'), destination: city('Davao', 'DVO'), dep: daysFromNow(5, 4), hours: 2, basePrice: 3200, totalSeats: 180 },
-  { flightNumber: 'PR301', origin: city('Manila', 'MNL'), destination: city('Iloilo', 'ILO'), dep: daysFromNow(7, 1), hours: 1.25, basePrice: 2300, totalSeats: 120 },
-  { flightNumber: 'PR501', origin: city('Manila', 'MNL'), destination: city('Singapore', 'SIN'), dep: daysFromNow(10, 3), hours: 3.75, basePrice: 8500, totalSeats: 200 },
-  { flightNumber: 'PR502', origin: city('Singapore', 'SIN'), destination: city('Manila', 'MNL'), dep: daysFromNow(14, 6), hours: 3.75, basePrice: 8700, totalSeats: 200 },
-  { flightNumber: 'PR701', origin: city('Manila', 'MNL'), destination: city('Tokyo', 'NRT'), dep: daysFromNow(21, 1), hours: 4.5, basePrice: 15000, totalSeats: 250 },
-  { flightNumber: 'PR801', origin: city('Cebu', 'CEB'), destination: city('Hong Kong', 'HKG'), dep: daysFromNow(30, 5), hours: 3, basePrice: 9800, totalSeats: 180 }
+  { flightNumber: 'PR101', origin: city('Manila', 'MNL'), destination: city('Cebu', 'CEB'), dep: daysFromNow(2, 8, 30), hours: 1.5, basePrice: 2500, totalSeats: 150 },
+  { flightNumber: 'PR102', origin: city('Cebu', 'CEB'), destination: city('Manila', 'MNL'), dep: daysFromNow(2, 14, 0), hours: 1.5, basePrice: 2600, totalSeats: 150 },
+  { flightNumber: 'PR201', origin: city('Manila', 'MNL'), destination: city('Davao', 'DVO'), dep: daysFromNow(4, 9, 15), hours: 2, basePrice: 3200, totalSeats: 180 },
+  { flightNumber: 'PR301', origin: city('Manila', 'MNL'), destination: city('Iloilo', 'ILO'), dep: daysFromNow(6, 11, 0), hours: 1.25, basePrice: 2300, totalSeats: 120 },
+  { flightNumber: 'PR501', origin: city('Manila', 'MNL'), destination: city('Singapore', 'SIN'), dep: daysFromNow(8, 7, 45), hours: 3.75, basePrice: 8500, totalSeats: 200 },
+  { flightNumber: 'PR502', origin: city('Singapore', 'SIN'), destination: city('Manila', 'MNL'), dep: daysFromNow(12, 13, 30), hours: 3.75, basePrice: 8700, totalSeats: 200 },
+  { flightNumber: 'PR701', origin: city('Manila', 'MNL'), destination: city('Tokyo', 'NRT'), dep: daysFromNow(18, 6, 0), hours: 4.5, basePrice: 15000, totalSeats: 250 },
+  { flightNumber: 'PR801', origin: city('Cebu', 'CEB'), destination: city('Hong Kong', 'HKG'), dep: daysFromNow(25, 10, 30), hours: 3, basePrice: 9800, totalSeats: 180 }
 ];
 
 const seedFlights = async () => {
@@ -36,12 +36,25 @@ const seedFlights = async () => {
     console.log('Connected to MongoDB for flight seeding...');
 
     let created = 0;
+    let updated = 0;
 
     for (const sample of sampleFlights) {
-      // Skip flights that already exist so this script is safe to run twice
-      const exists = await Flight.findOne({ flightNumber: sample.flightNumber });
-      if (exists) {
-        console.log(`Skipped ${sample.flightNumber} (already exists)`);
+      const departureTime = sample.dep;
+      const arrivalTime = plusHours(sample.dep, sample.hours);
+
+      const existing = await Flight.findOne({ flightNumber: sample.flightNumber });
+      if (existing) {
+        existing.origin = sample.origin;
+        existing.destination = sample.destination;
+        existing.departureTime = departureTime;
+        existing.arrivalTime = arrivalTime;
+        existing.basePrice = sample.basePrice;
+        existing.totalSeats = sample.totalSeats;
+        existing.availableSeats = sample.totalSeats;
+        existing.status = 'Scheduled';
+        await existing.save();
+        console.log(`Updated ${sample.flightNumber} -> Dep: ${departureTime.toISOString()}`);
+        updated++;
         continue;
       }
 
@@ -49,16 +62,45 @@ const seedFlights = async () => {
         flightNumber: sample.flightNumber,
         origin: sample.origin,
         destination: sample.destination,
-        departureTime: sample.dep,
-        arrivalTime: plusHours(sample.dep, sample.hours),
+        departureTime,
+        arrivalTime,
         basePrice: sample.basePrice,
         totalSeats: sample.totalSeats,
-        availableSeats: sample.totalSeats
+        availableSeats: sample.totalSeats,
+        status: 'Scheduled'
       });
+      console.log(`Created ${sample.flightNumber} -> Dep: ${departureTime.toISOString()}`);
       created++;
     }
 
-    console.log(`Done. ${created} flight(s) added.`);
+    // Also shift any other past flights in the database to future dates
+    const now = new Date();
+    const otherPastFlights = await Flight.find({
+      departureTime: { $lt: now },
+      flightNumber: { $nin: sampleFlights.map((s) => s.flightNumber) }
+    });
+
+    for (let i = 0; i < otherPastFlights.length; i++) {
+      const flight = otherPastFlights[i];
+      const durationMs =
+        flight.arrivalTime && flight.departureTime
+          ? Math.max(3600000, new Date(flight.arrivalTime).getTime() - new Date(flight.departureTime).getTime())
+          : 2 * 3600000;
+      const newDep = daysFromNow(5 + (i % 15), 10, 0);
+      flight.departureTime = newDep;
+      flight.arrivalTime = new Date(newDep.getTime() + durationMs);
+      if (flight.status === 'Completed') {
+        flight.status = 'Scheduled';
+      }
+      if (flight.availableSeats <= 0) {
+        flight.availableSeats = flight.totalSeats;
+      }
+      await flight.save();
+      console.log(`Shifted other flight ${flight.flightNumber} to future: ${newDep.toISOString()}`);
+      updated++;
+    }
+
+    console.log(`Done. ${created} flight(s) added, ${updated} flight(s) updated to future dates.`);
     await mongoose.disconnect();
     process.exit(0);
   } catch (error) {

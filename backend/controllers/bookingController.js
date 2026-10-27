@@ -34,6 +34,12 @@ const createBooking = async (req, res, next) => {
       });
     }
 
+    if (new Date(flight.departureTime) <= new Date()) {
+      return res.status(400).json({
+        message: 'This flight has already departed and cannot be booked'
+      });
+    }
+
     // Check available seats
     if (flight.availableSeats < passengers.length) {
       return res.status(400).json({
