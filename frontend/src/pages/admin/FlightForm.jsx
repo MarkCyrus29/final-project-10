@@ -69,6 +69,8 @@ const FlightForm = () => {
     register,
     handleSubmit,
     reset,
+    watch,
+    setValue,
     formState: { errors }
   } = useForm({
     resolver: yupResolver(schema),
@@ -193,8 +195,9 @@ const FlightForm = () => {
             <Select
               label="Cabin class"
               id="seatClass"
+              value={watch('seatClass')}
+              onChange={(e) => setValue('seatClass', e.target.value, { shouldValidate: true })}
               error={errors.seatClass?.message}
-              {...register('seatClass')}
             >
               <option value="Economy">Economy</option>
               <option value="Business">Business</option>
@@ -310,8 +313,9 @@ const FlightForm = () => {
               <Select
                 label="Flight status"
                 id="status"
+                value={watch('status')}
+                onChange={(e) => setValue('status', e.target.value, { shouldValidate: true })}
                 error={errors.status?.message}
-                {...register('status')}
               >
                 <option value="Scheduled">Scheduled</option>
                 <option value="Delayed">Delayed</option>

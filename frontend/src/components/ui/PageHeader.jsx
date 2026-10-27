@@ -9,10 +9,12 @@ export const PageHeader = ({
   backTo,
   backLabel,
   actions,
+  action,
   titleAdornment,
   printHidden = false,
   className = ''
 }) => {
+  const renderedActions = actions || action;
   return (
     <header className={cn('mb-6 md:mb-8', printHidden && 'print:hidden', className)}>
       {backTo && (
@@ -40,9 +42,9 @@ export const PageHeader = ({
             </p>
           )}
         </div>
-        {actions && (
+        {renderedActions && (
           <div className="flex flex-wrap items-center gap-2">
-            {actions}
+            {renderedActions}
           </div>
         )}
       </div>

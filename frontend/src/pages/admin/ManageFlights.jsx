@@ -147,10 +147,9 @@ const ManageFlights = () => {
             Edit
           </ButtonLink>
           <Button
-            variant="ghost"
+            variant="danger"
             size="sm"
             onClick={() => handleDelete(flight._id, flight.flightNumber)}
-            className="text-danger hover:text-danger"
             aria-label="Delete"
             title="Delete"
           >

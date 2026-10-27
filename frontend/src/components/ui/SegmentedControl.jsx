@@ -8,6 +8,11 @@ export const SegmentedControl = ({
   ariaLabel = 'Filter options',
   className = ''
 }) => {
+  // Normalise options — accept plain strings or { value, label } objects
+  const normalised = options.map((opt) =>
+    typeof opt === 'string' ? { value: opt, label: opt } : opt
+  );
+
   return (
     <div
       role="group"
@@ -17,7 +22,7 @@ export const SegmentedControl = ({
         className
       )}
     >
-      {options.map((option) => {
+      {normalised.map((option) => {
         const isActive = option.value === value;
         return (
           <button
@@ -41,3 +46,4 @@ export const SegmentedControl = ({
 };
 
 export default SegmentedControl;
+

@@ -1,9 +1,9 @@
-import React, { useId, useState } from 'react';
+import React, { useId, useState, forwardRef } from 'react';
 import { Eye, EyeOff } from 'lucide-react';
 import { cn } from '../../lib/cn';
 import { IconButton } from './Button';
 
-export const Input = ({
+export const Input = forwardRef(({
   label,
   error,
   hint,
@@ -12,7 +12,7 @@ export const Input = ({
   hideLabel = false,
   className = '',
   ...props
-}) => {
+}, ref) => {
   const generatedId = useId();
   const id = explicitId || generatedId;
   const hintId = hint ? `${id}-hint` : undefined;
@@ -39,6 +39,7 @@ export const Input = ({
           </div>
         )}
         <input
+          ref={ref}
           id={id}
           aria-describedby={describedBy}
           aria-invalid={error ? 'true' : undefined}
@@ -63,9 +64,11 @@ export const Input = ({
       )}
     </div>
   );
-};
+});
 
-export const PasswordInput = ({
+Input.displayName = 'Input';
+
+export const PasswordInput = forwardRef(({
   label,
   error,
   hint,
@@ -73,7 +76,7 @@ export const PasswordInput = ({
   hideLabel = false,
   className = '',
   ...props
-}) => {
+}, ref) => {
   const [showPassword, setShowPassword] = useState(false);
   const generatedId = useId();
   const id = explicitId || generatedId;
@@ -96,6 +99,7 @@ export const PasswordInput = ({
       )}
       <div className="relative">
         <input
+          ref={ref}
           id={id}
           type={showPassword ? 'text' : 'password'}
           aria-describedby={describedBy}
@@ -128,6 +132,8 @@ export const PasswordInput = ({
       )}
     </div>
   );
-};
+});
+
+PasswordInput.displayName = 'PasswordInput';
 
 export default Input;

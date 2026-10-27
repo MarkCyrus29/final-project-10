@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { forwardRef } from 'react';
 import { Link } from 'react-router-dom';
 import { cn } from '../../lib/cn';
 import { Spinner } from './Spinner';
@@ -22,7 +22,7 @@ export const buttonClasses = ({ variant = 'primary', size = 'md', className = ''
   return cn(base, sizes[size] || sizes.md, variants[variant] || variants.primary, className);
 };
 
-export const Button = ({
+export const Button = forwardRef(({
   variant = 'primary',
   size = 'md',
   loading = false,
@@ -31,9 +31,10 @@ export const Button = ({
   disabled,
   children,
   ...props
-}) => {
+}, ref) => {
   return (
     <button
+      ref={ref}
       className={buttonClasses({ variant, size, className })}
       disabled={disabled || loading}
       aria-busy={loading ? 'true' : undefined}
@@ -47,7 +48,9 @@ export const Button = ({
       {children}
     </button>
   );
-};
+});
+
+Button.displayName = 'Button';
 
 export const ButtonLink = ({
   to,

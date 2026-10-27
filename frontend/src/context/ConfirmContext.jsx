@@ -15,9 +15,9 @@ export const ConfirmProvider = ({ children }) => {
       setConfig({
         title: options.title || 'Are you sure?',
         description: options.description || '',
-        confirmLabel: options.confirmLabel || 'Confirm',
+        confirmLabel: options.confirmText || options.confirmLabel || 'Confirm',
         cancelLabel: options.cancelLabel || 'Cancel',
-        tone: options.tone || 'default'
+        tone: options.variant || options.tone || 'default'
       });
       if (dialogRef.current && !dialogRef.current.open) {
         dialogRef.current.showModal();
@@ -74,7 +74,7 @@ export const ConfirmProvider = ({ children }) => {
           handleCancel();
         }}
         onClick={handleDialogClick}
-        className="fixed inset-x-0 bottom-0 top-auto m-0 w-full max-w-none rounded-t-2xl md:inset-auto md:m-auto md:max-w-md md:rounded-xl border border-line bg-surface p-6 text-ink shadow-lg backdrop:bg-black/50"
+        className="fixed inset-0 m-auto h-fit w-[calc(100%-2rem)] max-w-md rounded-xl border border-line bg-surface p-6 text-ink shadow-lg backdrop:bg-black/50"
       >
         {config && (
           <div>
