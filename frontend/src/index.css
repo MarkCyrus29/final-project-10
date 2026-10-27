@@ -101,6 +101,14 @@
     -webkit-font-smoothing: antialiased;
   }
   :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  select option {
+    background-color: var(--surface);
+    color: var(--ink);
+  }
+  select option:disabled {
+    color: var(--ink-subtle);
+    background-color: var(--surface-muted);
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

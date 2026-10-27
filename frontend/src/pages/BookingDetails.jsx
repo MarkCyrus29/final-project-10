@@ -235,7 +235,7 @@ const BookingDetails = () => {
               Payment summary
             </span>
             <span className="text-xs text-ink-muted mt-0.5 block">
-              {booking.passengers?.length} {plural(booking.passengers?.length || 1, 'passenger', 'passengers')} × {booking.seatClass} class fare
+              {plural(booking.passengers?.length || 1, 'passenger', 'passengers')} × {booking.seatClass} class fare
             </span>
           </div>
 

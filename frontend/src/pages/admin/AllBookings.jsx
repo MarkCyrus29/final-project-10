@@ -139,7 +139,7 @@ const AllBookings = () => {
       cell: (b) => (
         <div>
           <div className="text-xs font-medium text-ink">
-            {b.passengers?.length || 0} {plural(b.passengers?.length || 0, 'passenger', 'passengers')}
+            {plural(b.passengers?.length || 0, 'passenger', 'passengers')}
           </div>
           <div className="text-xs text-ink-muted truncate max-w-[140px]">
             {b.passengers?.map((p) => `${p.firstName} ${p.lastName}`).join(', ')}

@@ -8,12 +8,15 @@ export const Alert = ({
   children,
   ...props
 }) => {
+  const dangerConfig = {
+    classes: 'border-danger-line bg-danger-soft text-danger',
+    icon: CircleAlert,
+    role: 'alert'
+  };
+
   const configs = {
-    error: {
-      classes: 'border-danger-line bg-danger-soft text-danger',
-      icon: CircleAlert,
-      role: 'alert'
-    },
+    danger: dangerConfig,
+    error: dangerConfig,
     success: {
       classes: 'border-success-line bg-success-soft text-success',
       icon: CircleCheck,

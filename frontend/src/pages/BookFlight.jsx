@@ -204,7 +204,7 @@ const BookFlight = () => {
             <div className="flex justify-between">
               <span className="text-ink-muted">Passengers</span>
               <span className="font-semibold text-ink">
-                {bookingResult.passengers?.length} {plural(bookingResult.passengers?.length || 1, 'passenger', 'passengers')}
+                {plural(bookingResult.passengers?.length || 1, 'passenger', 'passengers')}
               </span>
             </div>
             <div className="flex justify-between border-t border-line pt-2.5">
@@ -268,7 +268,7 @@ const BookFlight = () => {
             {formatPrice(flight.basePrice)}
           </span>
           <span className="text-xs text-ink-muted block mt-0.5">
-            {flight.availableSeats} {plural(flight.availableSeats, 'seat', 'seats')} available
+            {plural(flight.availableSeats, 'seat', 'seats')} available
           </span>
         </div>
       </Card>
@@ -296,7 +296,7 @@ const BookFlight = () => {
             >
               {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((num) => (
                 <option key={num} value={num} disabled={num > flight.availableSeats}>
-                  {num} {plural(num, 'passenger', 'passengers')} {num > flight.availableSeats ? '(not enough seats)' : ''}
+                  {plural(num, 'passenger', 'passengers')} {num > flight.availableSeats ? '(not enough seats)' : ''}
                 </option>
               ))}
             </Select>
@@ -370,7 +370,7 @@ const BookFlight = () => {
               {formatPrice(estimatedTotal)}
             </div>
             <p className="text-xs text-ink-muted mt-0.5">
-              {formatPrice(flight.basePrice)} base × {multiplier}× class × {count} {plural(count, 'passenger', 'passengers')}
+              {formatPrice(flight.basePrice)} base × {multiplier}× class × {plural(count, 'passenger', 'passengers')}
             </p>
           </div>
 
