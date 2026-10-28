@@ -183,7 +183,8 @@ const FlightForm = () => {
 
       <form onSubmit={handleSubmit(onSubmit)}>
         <Card className="p-6 sm:p-8 space-y-6">
-          {/* Flight Number & Cabin Class */}
+          {/* Flight number. Every flight is sold in all three cabin classes (priced from the
+              base fare), so there is no per-flight cabin class to choose here. */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <Input
               label="Flight number"
@@ -192,18 +193,6 @@ const FlightForm = () => {
               error={errors.flightNumber?.message}
               {...register('flightNumber')}
             />
-
-            <Select
-              label="Cabin class"
-              id="seatClass"
-              value={watch('seatClass')}
-              onChange={(e) => setValue('seatClass', e.target.value, { shouldValidate: true })}
-              error={errors.seatClass?.message}
-            >
-              <option value="Economy">Economy</option>
-              <option value="Business">Business</option>
-              <option value="First Class">First Class</option>
-            </Select>
           </div>
 
           {/* Origin */}
