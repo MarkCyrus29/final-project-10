@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import * as yup from 'yup';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useDocumentTitle } from '../hooks/useDocumentTitle';
 import { Button } from '../components/ui/Button';
@@ -19,6 +19,8 @@ const schema = yup.object().shape({
 const Login = () => {
   const { login } = useAuth();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const sessionExpired = searchParams.get('expired') === '1';
   const [serverError, setServerError] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
@@ -62,6 +64,9 @@ const Login = () => {
             </p>
           </div>
 
+          {sessionExpired && !serverError && (
+            <Alert variant="info">Your session has expired. Please sign in again.</Alert>
+          )}
           {serverError && <Alert variant="danger">{serverError}</Alert>}
 
           <form className="space-y-4" onSubmit={handleSubmit(onSubmit)}>

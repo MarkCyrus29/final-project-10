@@ -27,4 +27,23 @@ api.interceptors.request.use(
   }
 );
 
+// If the server says our token is no longer valid (401), the saved session has expired.
+// Clear it and send the user to sign in again instead of leaving them on a page full of errors.
+// Skipped for the login and register calls (a 401 there just means wrong credentials)
+// and for /api/auth/me (AuthContext handles that one when the app first loads).
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    const url = error.config?.url || '';
+    const isAuthCall = /\/api\/auth\/(login|register|me)/.test(url);
+
+    if (error.response?.status === 401 && !isAuthCall && localStorage.getItem('token')) {
+      localStorage.removeItem('token');
+      window.location.assign('/login?expired=1');
+    }
+
+    return Promise.reject(error);
+  }
+);
+
 export default api;
