@@ -30,7 +30,7 @@ const placeFilter = (field, text) => {
 // @access  Public
 const getFlights = async (req, res, next) => {
   try {
-    const { origin, destination, date, all } = req.query;
+    const { origin, destination, date, all, tzOffset } = req.query;
     const conditions = [];
 
     // Cancelled and already departed flights are hidden unless ?all=true (used by the admin list)
@@ -47,13 +47,21 @@ const getFlights = async (req, res, next) => {
       conditions.push(placeFilter('destination', destination));
     }
 
-    // date = same calendar day (UTC) as departureTime, e.g. 2026-11-05
+    // date = same calendar day as departureTime, e.g. 2026-11-05.
+    // The browser sends tzOffset (Date.getTimezoneOffset(), minutes behind UTC, e.g. -480 for
+    // Manila) so "the same day" means the passenger's local day. Without it, UTC days are used.
     if (typeof date === 'string' && date.trim()) {
       const start = new Date(date);
       if (isNaN(start.getTime())) {
         return res.status(400).json({ message: 'Invalid date, use YYYY-MM-DD' });
       }
       start.setUTCHours(0, 0, 0, 0);
+
+      const offsetMinutes = Number(tzOffset);
+      if (Number.isInteger(offsetMinutes) && Math.abs(offsetMinutes) <= 14 * 60) {
+        start.setTime(start.getTime() + offsetMinutes * 60 * 1000);
+      }
+
       const end = new Date(start.getTime() + 24 * 60 * 60 * 1000);
       conditions.push({ departureTime: { $gte: start, $lt: end } });
     }

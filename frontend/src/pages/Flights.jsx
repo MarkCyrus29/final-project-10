@@ -39,7 +39,12 @@ const Flights = () => {
       const params = {};
       if (searchParams.origin) params.origin = searchParams.origin;
       if (searchParams.destination) params.destination = searchParams.destination;
-      if (searchParams.date) params.date = searchParams.date;
+      if (searchParams.date) {
+        params.date = searchParams.date;
+        // Tell the server which time zone "this date" is in, so a 7:45 AM departure
+        // shows up under its local date instead of the previous UTC day
+        params.tzOffset = new Date().getTimezoneOffset();
+      }
 
       const response = await api.get('/api/flights', { params });
       setFlights(response.data);
