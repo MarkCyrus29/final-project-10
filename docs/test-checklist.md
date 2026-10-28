@@ -33,7 +33,7 @@ Frontend route guards:
 
 | Route | Guard | Logged out | Passenger | Admin |
 |---|---|---|---|---|
-| `/flights`, `/flights/:id`, `/login`, `/register` | none | allowed | allowed | allowed |
+| `/` (Home), `/flights`, `/flights/:id`, `/login`, `/register` | none | allowed | allowed | allowed |
 | `/book/:id`, `/my-bookings` | PassengerRoute | to `/login` | allowed | to `/admin` |
 | `/bookings/:id`, `/profile` | ProtectedRoute | to `/login` | allowed | allowed |
 | `/admin`, `/admin/flights*`, `/admin/bookings`, `/admin/users` | AdminRoute | to `/login` | to `/flights` | allowed |
@@ -45,7 +45,7 @@ Frontend route guards:
 | Register | names, email format, password min 6, phone format; User schema: required, unique, email match | same rules, names trimmed, phone format |
 | Login | email format, password required | same |
 | Flight add/edit | all fields, price > 0, seats >= 1, enums; schema: arrival after departure, available <= total, 3-letter code | same, plus airport code letters only |
-| Booking | flight id, class enum, 1 to 9 passengers, names, date of birth valid and not in the future; schema: 1 to 9 passengers | names, date of birth required and not in the future |
+| Booking | flight id, class enum, 1 to 9 passengers, names, date of birth valid and not in the future, gender Male/Female/Other (optional for old bookings); schema: 1 to 9 passengers | names, date of birth required and not in the future (age shown live), gender required |
 | Profile | names not empty, phone format, new password min 6, current password verified | names, phone format |
 | Change password | current password verified, new password min 6 | current required, new min 6, confirm must match |
 
@@ -70,10 +70,15 @@ Passenger and admin steps use the running app (`npm run dev` in both folders).
 
 | Feature | Steps | Expected |
 |---|---|---|
-| Search flights | Enter origin, destination or date, press Search | Only matching flights, "No flights found" when none |
-| Flight details | Open a flight card | Details and a Book button |
-| Book | Choose class, 2 passengers, fill names and dates of birth, submit | Reference code `BK-YYYY-XXXX` shown, price = base x class x passengers |
-| Booking validation | Leave names empty, or pick a future date of birth | Yup errors, nothing is sent |
+| Home quick search | On `/`, enter MNL, CEB and a date, press Search flights | Opens `/flights?origin=MNL&destination=CEB&date=...` already filtered, form pre-filled |
+| Popular routes | Click a popular route chip on Home | Flight list filtered to that route |
+| Search flights | Enter origin, destination or date, press Search | Only matching flights, "No flights found" when none, URL updates, Back restores the previous search |
+| Date uses local time | Search the date shown on a flight card | That flight is in the results, even for early-morning departures |
+| Departed flights | Look for a flight whose departure time has passed | Not in search results (still visible to admins in Manage flights) |
+| Flight details | Open a flight card | Schedule, base fare, seats left, the price of Economy (1x), Business (1.8x) and First Class (2.5x), and a Book button |
+| Book | Choose Business, 3 passengers, fill name, date of birth and gender for each, submit | Total updates as passengers are added, reference code `BK-YYYY-XXXX` shown, price = base x class multiplier x passengers |
+| Passenger age | Pick a date of birth in the booking form | The passenger's age appears under the field, future dates cannot be picked |
+| Booking validation | Leave names or gender empty, or enter a future date of birth | Yup errors, nothing is sent |
 | Not enough seats | Book more passengers than available | Error message |
 | My bookings | Open `/my-bookings` | Only your own bookings |
 | Booking details | Open a booking | Passenger list and flight info |
@@ -122,24 +127,34 @@ Passenger and admin steps use the running app (`npm run dev` in both folders).
 |---|---|---|
 | Missing flight | Open `/flights/<unknown id>` | "Flight Not Found" page |
 | Missing booking | Open `/bookings/<unknown id>` | "Booking not found" page |
-| Unknown URL | Open `/some/unknown/url` | Redirected to `/flights` |
+| Unknown URL | Open `/some/unknown/url` | "Page not found" page with a way back |
+| Expired session | Sign in, then make the saved token invalid and open My bookings | Sent to `/login?expired=1` with "Your session has expired" |
 | Empty bookings | New passenger opens `/my-bookings` | "No bookings yet" message |
 | Unknown API route | GET `/api/nope` | 404 `{ "message": "Route not found" }` |
 | Bad JSON body | Send malformed JSON | 400 with a message |
 
-## 4. Automated results (Phase 6 run)
+## 4. Automated tests
 
-Run against the Atlas database with the real server:
+```
+cd backend
+npm test
+```
 
-- Access matrix, booking flows and validation fixes: 63 of 63 passed.
-- Auth, flights, filters, users and password flows: 74 of 74 passed.
-- User deletion against the real bookings API: 12 of 12 passed.
-- No API response contained a `password` key.
-- Browser checks on login, register, booking, profile and flight forms, both route guards, and the not-found pages: all passed.
+43 tests run the real app against the database in `backend/.env` (the admin must exist, see
+`npm run seed:admin`). They create their own uniquely named users and flights and delete them
+afterwards. They cover:
+
+- Authentication, including that no response ever contains a `password` key.
+- The access table in section 1, for anonymous users, passengers and admins.
+- Flight search filters, time zone aware dates, hidden departed and cancelled flights, and flight validation.
+- Booking prices for each cabin class, seat counts, owner-only access, cancellation and admin status rules.
+- Concurrency: simultaneous bookings never oversell a flight, and a double cancel releases seats once.
+- Profile and password changes, and deleting a user who has bookings.
+
+The browser checklist in section 3 covers what the API tests cannot: forms, route guards and pages.
 
 ## 5. Known limits (not fixed on purpose)
 
-- Two people booking the last seats at the same moment could oversell a flight, because the seat check and update are separate steps.
-- Flights that already departed can still be booked while their status is Scheduled.
-- The flight date filter uses UTC days.
-- CORS is open to every origin until Phase 7 restricts it to `CLIENT_URL`.
+- A Delayed flight cannot be booked, because the spec only allows booking Scheduled flights.
+- A booking's total price is stored when it is made, so changing the cabin multipliers later does not reprice older bookings.
+- Seats are taken with one atomic update before the booking is saved, and given back if saving fails. There is no database transaction around the two steps, so a server crash in the instant between them would leave those seats taken without a booking.
