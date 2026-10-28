@@ -7,7 +7,7 @@ import { ArrowLeft, CheckCircle2, AlertCircle } from 'lucide-react';
 import api from '../api/axios';
 import { useAuth } from '../context/AuthContext';
 import { useDocumentTitle } from '../hooks/useDocumentTitle';
-import { formatPrice, formatDate, formatTime, plural } from '../lib/format';
+import { formatPrice, formatDate, formatTime, plural, calculateAge, todayLocalDate } from '../lib/format';
 import { CABIN_CLASSES, getMultiplier, calculateTotalPrice } from '../lib/pricing';
 import { Button, ButtonLink } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
@@ -31,7 +31,11 @@ const schema = yup.object().shape({
           .required('Date of birth is required')
           .test('not-future', 'Date of birth cannot be in the future', (value) => {
             return !value || new Date(value) <= new Date();
-          })
+          }),
+        gender: yup
+          .string()
+          .oneOf(['Male', 'Female', 'Other'], 'Please select a gender')
+          .required('Please select a gender')
       })
     )
     .min(1, 'At least 1 passenger is required')
@@ -61,7 +65,7 @@ const BookFlight = () => {
     resolver: yupResolver(schema),
     defaultValues: {
       seatClass: 'Economy',
-      passengers: [{ firstName: user?.firstName || '', lastName: user?.lastName || '', dateOfBirth: '' }]
+      passengers: [{ firstName: user?.firstName || '', lastName: user?.lastName || '', dateOfBirth: '', gender: '' }]
     }
   });
 
@@ -105,7 +109,8 @@ const BookFlight = () => {
       const additional = Array.from({ length: needed }, () => ({
         firstName: '',
         lastName: '',
-        dateOfBirth: ''
+        dateOfBirth: '',
+        gender: ''
       }));
       append(additional);
     } else if (target < current) {
@@ -134,7 +139,8 @@ const BookFlight = () => {
         passengers: data.passengers.map((p) => ({
           firstName: p.firstName.trim(),
           lastName: p.lastName.trim(),
-          dateOfBirth: new Date(p.dateOfBirth).toISOString()
+          dateOfBirth: new Date(p.dateOfBirth).toISOString(),
+          gender: p.gender
         }))
       };
 
@@ -343,7 +349,7 @@ const BookFlight = () => {
                   )}
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <Input
                     label="First name"
                     id={`passengers.${index}.firstName`}
@@ -364,9 +370,27 @@ const BookFlight = () => {
                     label="Date of birth"
                     id={`passengers.${index}.dateOfBirth`}
                     type="date"
+                    max={todayLocalDate()}
+                    hint={
+                      calculateAge(watchedPassengers[index]?.dateOfBirth) !== null
+                        ? `Age: ${calculateAge(watchedPassengers[index]?.dateOfBirth)}`
+                        : undefined
+                    }
                     error={errors.passengers?.[index]?.dateOfBirth?.message}
                     {...register(`passengers.${index}.dateOfBirth`)}
                   />
+
+                  <Select
+                    label="Gender"
+                    id={`passengers.${index}.gender`}
+                    error={errors.passengers?.[index]?.gender?.message}
+                    {...register(`passengers.${index}.gender`)}
+                  >
+                    <option value="">Select gender</option>
+                    <option value="Male">Male</option>
+                    <option value="Female">Female</option>
+                    <option value="Other">Other</option>
+                  </Select>
                 </div>
               </div>
             ))}

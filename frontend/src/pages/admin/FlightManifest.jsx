@@ -59,6 +59,7 @@ const FlightManifest = () => {
         firstName: passenger.firstName,
         lastName: passenger.lastName,
         dateOfBirth: passenger.dateOfBirth,
+        gender: passenger.gender,
         seatClass: booking.seatClass,
         bookingReference: booking.bookingReference,
         bookingId: booking._id,
@@ -78,7 +79,7 @@ const FlightManifest = () => {
     return (
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
         <Card className="p-6">
-          <TableSkeleton rows={6} cols={7} />
+          <TableSkeleton rows={6} cols={8} />
         </Card>
       </div>
     );
@@ -123,6 +124,10 @@ const FlightManifest = () => {
           {item.dateOfBirth ? formatShortDate(item.dateOfBirth) : 'N/A'}
         </span>
       )
+    },
+    {
+      header: 'Gender',
+      cell: (item) => <span className="text-ink-muted">{item.gender || '—'}</span>
     },
     {
       header: 'Cabin class',
@@ -272,6 +277,7 @@ const FlightManifest = () => {
                 </div>
                 <div className="text-xs text-ink-muted flex items-center gap-3">
                   <span>DOB: {item.dateOfBirth ? formatShortDate(item.dateOfBirth) : 'N/A'}</span>
+                  {item.gender && <span>{item.gender}</span>}
                   <Badge variant="neutral">{item.seatClass}</Badge>
                 </div>
                 <div className="text-xs pt-1 border-t border-line flex justify-between items-center">

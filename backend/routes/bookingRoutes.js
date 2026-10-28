@@ -36,7 +36,11 @@ const createBookingValidation = [
     .withMessage('Valid passenger date of birth is required')
     .bail()
     .custom((value) => new Date(value) <= new Date())
-    .withMessage('Passenger date of birth cannot be in the future')
+    .withMessage('Passenger date of birth cannot be in the future'),
+  body('passengers.*.gender')
+    .optional({ values: 'falsy' })
+    .isIn(['Male', 'Female', 'Other'])
+    .withMessage('Passenger gender must be Male, Female, or Other')
 ];
 
 // Update status validation (Admin)

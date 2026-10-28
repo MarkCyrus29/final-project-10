@@ -22,7 +22,9 @@ const bookingSchema = new mongoose.Schema({
       {
         firstName: { type: String, required: [true, 'Passenger first name is required'], trim: true },
         lastName: { type: String, required: [true, 'Passenger last name is required'], trim: true },
-        dateOfBirth: { type: Date, required: [true, 'Passenger date of birth is required'] }
+        dateOfBirth: { type: Date, required: [true, 'Passenger date of birth is required'] },
+        // Optional so bookings made before this field existed stay valid
+        gender: { type: String, enum: ['Male', 'Female', 'Other'] }
       }
     ],
     validate: {

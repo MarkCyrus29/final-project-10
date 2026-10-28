@@ -219,6 +219,11 @@ const BookingDetails = () => {
                   <span>
                     Born: <strong className="font-normal text-ink">{passenger.dateOfBirth ? formatDate(passenger.dateOfBirth) : 'N/A'}</strong>
                   </span>
+                  {passenger.gender && (
+                    <span>
+                      Gender: <strong className="font-normal text-ink">{passenger.gender}</strong>
+                    </span>
+                  )}
                   <span>
                     Class: <strong className="font-normal text-ink">{booking.seatClass}</strong>
                   </span>
