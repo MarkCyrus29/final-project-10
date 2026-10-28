@@ -74,6 +74,7 @@ const FlightForm = () => {
     formState: { errors }
   } = useForm({
     resolver: yupResolver(schema),
+    mode: 'onTouched',
     defaultValues: {
       seatClass: 'Economy',
       status: 'Scheduled'

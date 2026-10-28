@@ -29,7 +29,8 @@ const Login = () => {
     handleSubmit,
     formState: { errors }
   } = useForm({
-    resolver: yupResolver(schema)
+    resolver: yupResolver(schema),
+    mode: 'onTouched'
   });
 
   const onSubmit = async (data) => {

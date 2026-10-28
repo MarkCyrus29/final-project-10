@@ -55,6 +55,7 @@ const Profile = () => {
     formState: { errors: profileErrors }
   } = useForm({
     resolver: yupResolver(profileSchema),
+    mode: 'onTouched',
     defaultValues: {
       firstName: user?.firstName || '',
       lastName: user?.lastName || '',
@@ -70,7 +71,8 @@ const Profile = () => {
     reset: resetPassword,
     formState: { errors: passwordErrors }
   } = useForm({
-    resolver: yupResolver(passwordSchema)
+    resolver: yupResolver(passwordSchema),
+    mode: 'onTouched'
   });
 
   const onProfileSubmit = async (data) => {

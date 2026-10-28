@@ -63,6 +63,7 @@ const BookFlight = () => {
     formState: { errors }
   } = useForm({
     resolver: yupResolver(schema),
+    mode: 'onTouched',
     defaultValues: {
       seatClass: 'Economy',
       passengers: [{ firstName: user?.firstName || '', lastName: user?.lastName || '', dateOfBirth: '', gender: '' }]

@@ -39,7 +39,9 @@ const Register = () => {
     handleSubmit,
     formState: { errors }
   } = useForm({
-    resolver: yupResolver(schema)
+    resolver: yupResolver(schema),
+    // Check a field when the user leaves it, then keep checking as they type
+    mode: 'onTouched'
   });
 
   const onSubmit = async (data) => {
