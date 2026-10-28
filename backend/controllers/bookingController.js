@@ -2,6 +2,7 @@ const { validationResult } = require('express-validator');
 const Booking = require('../models/Booking');
 const Flight = require('../models/Flight');
 const generateReference = require('../utils/generateReference');
+const { reserveSeats, releaseSeats } = require('../utils/seats');
 
 // Seat class price multipliers
 const CLASS_MULTIPLIERS = {
@@ -54,20 +55,32 @@ const createBooking = async (req, res, next) => {
     // Generate unique booking reference code
     const bookingReference = await generateReference();
 
-    // Create booking document
-    const booking = await Booking.create({
-      bookingReference,
-      user: req.user._id,
-      flight: flight._id,
-      passengers,
-      seatClass,
-      totalPrice,
-      status: 'Confirmed'
-    });
+    // Take the seats first, in one atomic step. If someone else grabbed them
+    // after the check above, this fails instead of overselling the flight.
+    const reserved = await reserveSeats(flight._id, passengers.length);
+    if (!reserved) {
+      const latest = await Flight.findById(flight._id).select('availableSeats');
+      return res.status(400).json({
+        message: `Not enough available seats. Only ${latest ? latest.availableSeats : 0} seat(s) remaining.`
+      });
+    }
 
-    // Decrement available seats on the flight
-    flight.availableSeats -= passengers.length;
-    await flight.save();
+    // Create booking document. If this fails, give the seats back.
+    let booking;
+    try {
+      booking = await Booking.create({
+        bookingReference,
+        user: req.user._id,
+        flight: flight._id,
+        passengers,
+        seatClass,
+        totalPrice,
+        status: 'Confirmed'
+      });
+    } catch (createError) {
+      await releaseSeats(flight._id, passengers.length);
+      throw createError;
+    }
 
     // Return populated booking
     await booking.populate('flight');
@@ -168,25 +181,26 @@ const updateBookingStatus = async (req, res, next) => {
       return res.status(400).json({ message: 'A cancelled booking cannot be changed' });
     }
 
-    booking.status = status;
-    await booking.save();
+    // Change the status only if it is still what we just read. This stops two
+    // requests (e.g. passenger and admin cancelling together) from both releasing seats.
+    const updated = await Booking.findOneAndUpdate(
+      { _id: booking._id, status: oldStatus },
+      { status },
+      { returnDocument: 'after', runValidators: true }
+    );
+    if (!updated) {
+      return res.status(409).json({ message: 'This booking was just changed. Please refresh and try again.' });
+    }
 
     // If an admin cancels a confirmed booking, restore seats back to flight
     if (oldStatus === 'Confirmed' && status === 'Cancelled') {
-      const flight = await Flight.findById(booking.flight);
-      if (flight) {
-        flight.availableSeats = Math.min(
-          flight.totalSeats,
-          flight.availableSeats + booking.passengers.length
-        );
-        await flight.save();
-      }
+      await releaseSeats(updated.flight, updated.passengers.length);
     }
 
-    await booking.populate('user', 'firstName lastName email phone');
-    await booking.populate('flight');
+    await updated.populate('user', 'firstName lastName email phone');
+    await updated.populate('flight');
 
-    return res.json(booking);
+    return res.json(updated);
   } catch (error) {
     next(error);
   }
@@ -220,23 +234,23 @@ const cancelBooking = async (req, res, next) => {
       });
     }
 
-    // Set status to Cancelled (do NOT delete document)
-    booking.status = 'Cancelled';
-    await booking.save();
+    // Set status to Cancelled (do NOT delete document). The status check inside the
+    // update means a double click or a second request cannot release the seats twice.
+    const cancelled = await Booking.findOneAndUpdate(
+      { _id: booking._id, status: 'Confirmed' },
+      { status: 'Cancelled' },
+      { returnDocument: 'after' }
+    );
+    if (!cancelled) {
+      return res.status(400).json({ message: 'This booking is no longer active and cannot be cancelled' });
+    }
 
     // Restore seats to the flight
-    const flight = await Flight.findById(booking.flight);
-    if (flight) {
-      flight.availableSeats = Math.min(
-        flight.totalSeats,
-        flight.availableSeats + booking.passengers.length
-      );
-      await flight.save();
-    }
+    await releaseSeats(cancelled.flight, cancelled.passengers.length);
 
     return res.json({
       message: 'Booking cancelled successfully',
-      booking
+      booking: cancelled
     });
   } catch (error) {
     next(error);

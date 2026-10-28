@@ -1,7 +1,7 @@
 const { validationResult } = require('express-validator');
 const User = require('../models/User');
 const Booking = require('../models/Booking');
-const Flight = require('../models/Flight');
+const { releaseSeats } = require('../utils/seats');
 
 // True if the logged-in user is the owner of this account or an admin
 const canAccess = (req) => {
@@ -120,9 +120,7 @@ const deleteUser = async (req, res, next) => {
     // Step 1: give the seats of this user's Confirmed bookings back to their flights
     const confirmedBookings = await Booking.find({ user: user._id, status: 'Confirmed' });
     for (const booking of confirmedBookings) {
-      await Flight.findByIdAndUpdate(booking.flight, {
-        $inc: { availableSeats: booking.passengers.length }
-      });
+      await releaseSeats(booking.flight, booking.passengers.length);
     }
 
     // Step 2: delete all of this user's bookings
