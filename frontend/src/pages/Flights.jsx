@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { PlaneTakeoff, PlaneLanding, Search, SearchX } from 'lucide-react';
 import api from '../api/axios';
 import { useDocumentTitle } from '../hooks/useDocumentTitle';
@@ -10,19 +11,26 @@ import { Button } from '../components/ui/Button';
 import { Alert } from '../components/ui/Alert';
 import { EmptyState } from '../components/ui/EmptyState';
 import { FlightCardSkeleton } from '../components/ui/Skeleton';
-import { plural } from '../lib/format';
+import { plural, todayLocalDate } from '../lib/format';
 
 const Flights = () => {
   useDocumentTitle('Find a flight');
+
+  // Filters live in the URL (?origin=&destination=&date=) so the Home quick search,
+  // popular routes and the browser back button all land on the same results
+  const [searchParams, setSearchParams] = useSearchParams();
+  const urlOrigin = searchParams.get('origin') || '';
+  const urlDestination = searchParams.get('destination') || '';
+  const urlDate = searchParams.get('date') || '';
 
   const [flights, setFlights] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
-  // Search filter states
-  const [origin, setOrigin] = useState('');
-  const [destination, setDestination] = useState('');
-  const [date, setDate] = useState('');
+  // Search filter states (what is typed in the form)
+  const [origin, setOrigin] = useState(urlOrigin);
+  const [destination, setDestination] = useState(urlDestination);
+  const [date, setDate] = useState(urlDate);
 
   const fetchFlights = async (searchParams = {}) => {
     setLoading(true);
@@ -42,20 +50,38 @@ const Flights = () => {
     }
   };
 
+  // Whenever the URL filters change, show them in the form and load the matching flights
   useEffect(() => {
-    fetchFlights();
-  }, []);
+    setOrigin(urlOrigin);
+    setDestination(urlDestination);
+    setDate(urlDate);
+    fetchFlights({ origin: urlOrigin, destination: urlDestination, date: urlDate });
+  }, [urlOrigin, urlDestination, urlDate]);
+
+  // Put the filters in the URL. If they did not change, just reload the results.
+  const applyFilters = (next) => {
+    const params = new URLSearchParams();
+    if (next.origin) params.set('origin', next.origin);
+    if (next.destination) params.set('destination', next.destination);
+    if (next.date) params.set('date', next.date);
+
+    if (params.toString() === searchParams.toString()) {
+      fetchFlights(next);
+    } else {
+      setSearchParams(params);
+    }
+  };
 
   const handleSearch = (e) => {
     e.preventDefault();
-    fetchFlights({ origin, destination, date });
+    applyFilters({ origin: origin.trim(), destination: destination.trim(), date });
   };
 
   const handleReset = () => {
     setOrigin('');
     setDestination('');
     setDate('');
-    fetchFlights({});
+    applyFilters({ origin: '', destination: '', date: '' });
   };
 
   const hasFilters = Boolean(origin || destination || date);
@@ -98,6 +124,7 @@ const Flights = () => {
           <Input
             type="date"
             label="Date"
+            min={todayLocalDate()}
             value={date}
             onChange={(e) => setDate(e.target.value)}
           />

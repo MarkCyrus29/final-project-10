@@ -1,5 +1,5 @@
 import React from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { ThemeProvider } from './context/ThemeContext';
 import { AuthProvider } from './context/AuthContext';
 import { ToastProvider } from './context/ToastContext';
@@ -10,6 +10,7 @@ import ProtectedRoute from './routes/ProtectedRoute';
 import AdminRoute from './routes/AdminRoute';
 import PassengerRoute from './routes/PassengerRoute';
 
+import Home from './pages/Home';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import Flights from './pages/Flights';
@@ -48,10 +49,8 @@ function App() {
                   className="flex-1 pb-[calc(4rem+env(safe-area-inset-bottom)+1rem)] outline-none md:pb-0"
                 >
                   <Routes>
-                    {/* Default redirect to flights */}
-                    <Route path="/" element={<Navigate to="/flights" replace />} />
-
                     {/* Public Routes */}
+                    <Route path="/" element={<Home />} />
                     <Route path="/flights" element={<Flights />} />
                     <Route path="/flights/:id" element={<FlightDetails />} />
                     <Route path="/login" element={<Login />} />

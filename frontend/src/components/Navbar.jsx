@@ -16,7 +16,7 @@ export const Navbar = () => {
     <header className="sticky top-0 z-30 border-b border-line bg-surface print:hidden">
       <div className="mx-auto flex h-14 max-w-6xl items-center gap-6 px-4 md:px-6">
         {/* Brand */}
-        <Link to="/flights" className="flex items-center gap-2">
+        <Link to="/" className="flex items-center gap-2">
           <Plane size={18} className="text-accent" aria-hidden="true" />
           <span className="text-sm font-semibold text-ink">Airline Reservation</span>
         </Link>
