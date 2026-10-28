@@ -19,9 +19,6 @@ export const FlightCard = ({ flight }) => {
           <span className="font-mono text-sm text-ink-muted">
             {flight.flightNumber}
           </span>
-          <span className="text-sm text-ink-subtle">
-            {flight.seatClass || 'Economy'}
-          </span>
         </div>
         <StatusBadge status={flight.status} />
       </div>

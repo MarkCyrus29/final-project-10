@@ -5,8 +5,9 @@ import api from '../api/axios';
 import { useAuth } from '../context/AuthContext';
 import { useDocumentTitle } from '../hooks/useDocumentTitle';
 import { formatPrice, formatDate, formatTime, formatDuration } from '../lib/format';
+import { CABIN_CLASSES, calculateTotalPrice } from '../lib/pricing';
 import { Button, ButtonLink } from '../components/ui/Button';
-import { Badge, StatusBadge } from '../components/ui/Badge';
+import { StatusBadge } from '../components/ui/Badge';
 import { Card } from '../components/ui/Card';
 import { Alert } from '../components/ui/Alert';
 import { EmptyState } from '../components/ui/EmptyState';
@@ -88,7 +89,6 @@ const FlightDetails = () => {
             <span className="font-mono text-xl font-bold tracking-tight text-ink">
               {flight.flightNumber}
             </span>
-            <Badge variant="neutral">{flight.seatClass || 'Economy'}</Badge>
             <StatusBadge status={flight.status} />
           </div>
           <span className="text-sm text-ink-muted">
@@ -148,9 +148,9 @@ const FlightDetails = () => {
             </dd>
           </div>
           <div>
-            <dt className="text-xs text-ink-muted">Cabin class</dt>
+            <dt className="text-xs text-ink-muted">Duration</dt>
             <dd className="text-lg font-semibold text-ink mt-0.5">
-              {flight.seatClass || 'Economy'}
+              {formatDuration(flight.departureTime, flight.arrivalTime)}
             </dd>
           </div>
           <div>
@@ -161,10 +161,37 @@ const FlightDetails = () => {
           </div>
         </dl>
 
+        {/* Cabin class pricing, all derived from the base fare */}
+        <section aria-labelledby="cabin-pricing-heading">
+          <div className="flex flex-wrap items-baseline justify-between gap-2 mb-3">
+            <h2 id="cabin-pricing-heading" className="text-sm font-semibold text-ink">
+              Cabin classes
+            </h2>
+            <span className="text-xs text-ink-muted">Price per passenger</span>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            {CABIN_CLASSES.map((cabin) => (
+              <div
+                key={cabin.name}
+                tabIndex={0}
+                className="rounded-lg border border-line bg-canvas p-4 transition-all duration-150 hover:border-accent hover:bg-accent/5 hover:-translate-y-0.5 focus-visible:border-accent focus-visible:outline-2 focus-visible:outline-accent"
+              >
+                <div className="text-sm font-medium text-ink">{cabin.name}</div>
+                <div className="mt-1 text-xl font-bold font-mono text-ink">
+                  {formatPrice(calculateTotalPrice(flight.basePrice, cabin.name, 1))}
+                </div>
+                <div className="mt-0.5 text-xs text-ink-muted">
+                  {cabin.multiplier === 1 ? 'Base fare' : `${cabin.multiplier}× base fare`}
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+
         {/* Action row */}
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pt-2">
           <div>
-            <span className="text-xs text-ink-muted block">Base price per passenger</span>
+            <span className="text-xs text-ink-muted block">Starting from, per passenger</span>
             <span className="text-2xl font-bold font-mono text-accent">
               {formatPrice(flight.basePrice)}
             </span>
