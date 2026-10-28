@@ -13,9 +13,11 @@ A full-stack MERN web application where passengers search flights, book seats, a
 | Feature | Description |
 |---|---|
 | **User Authentication** | Register / login for passengers and admins; JWT sessions; protected routes |
-| **Flight Search** | Filter by origin, destination, and travel date |
-| **Flight Booking** | Pick a flight, choose class (Economy / Business / First Class), add up to 9 passengers; unique booking reference (e.g. `BK-2026-A1B2`) |
-| **Booking Management** | View booking history and details; cancel active reservations |
+| **Home and Quick Search** | Landing page with a quick search (from, to, date) and popular route shortcuts that open the flight list already filtered |
+| **Flight Search** | Filter by origin, destination, and travel date (matched in the passenger's local time zone); departed flights are hidden |
+| **Flight Booking** | Pick a flight, choose class (Economy 1x, Business 1.8x, First Class 2.5x of the base fare), add up to 9 passengers (name, date of birth, gender); live total price; unique booking reference (e.g. `BK-2026-A1B2`) |
+| **Seat Inventory** | Seats are taken and released with atomic database updates, so simultaneous bookings and cancellations never oversell a flight |
+| **Booking Management** | View booking history and details; cancel active reservations (seats return to the flight) |
 | **Flight Management (Admin)** | Add, edit, delete flights (schedule, pricing, capacity, status) |
 | **User Management (Admin)** | View all users; delete accounts |
 | **System-wide Booking View (Admin)** | View all reservations; passenger manifest per flight |
@@ -46,7 +48,8 @@ airline-reservation/
 │   ├── middleware/               # auth.js (protect, adminOnly, passengerOnly), error.js
 │   ├── models/                   # User.js, Flight.js, Booking.js
 │   ├── routes/                   # authRoutes, flightRoutes, bookingRoutes, userRoutes
-│   ├── utils/                    # generateReference.js, generateToken.js
+│   ├── utils/                    # generateReference.js, generateToken.js, pricing.js, seats.js
+│   ├── tests/                    # api.test.js (npm test)
 │   ├── seedAdmin.js              # Seeds the admin account
 │   ├── seedFlights.js            # Seeds sample flight data
 │   ├── server.js                 # Express entry point
@@ -55,11 +58,12 @@ airline-reservation/
 │
 ├── frontend/
 │   ├── src/
-│   │   ├── api/axios.js          # Axios instance with JWT interceptor
-│   │   ├── context/AuthContext.jsx
-│   │   ├── components/           # Navbar, FlightCard
-│   │   ├── pages/                # Login, Register, Flights, FlightDetails, BookFlight,
-│   │   │   │                     #   MyBookings, BookingDetails, Profile
+│   │   ├── api/axios.js          # Axios instance with JWT interceptor and expired session handling
+│   │   ├── context/              # Auth, Theme, Toast, Confirm
+│   │   ├── components/           # Navbar, FlightCard, layout/, ui/
+│   │   ├── lib/                  # format.js, pricing.js
+│   │   ├── pages/                # Home, Login, Register, Flights, FlightDetails, BookFlight,
+│   │   │   │                     #   MyBookings, BookingDetails, Profile, NotFound
 │   │   │   └── admin/            # AdminDashboard, ManageFlights, FlightForm,
 │   │   │                         #   AllBookings, FlightManifest, ManageUsers
 │   │   ├── routes/               # ProtectedRoute, AdminRoute, PassengerRoute
@@ -67,6 +71,7 @@ airline-reservation/
 │   ├── vercel.json               # SPA rewrites for Vercel
 │   └── package.json
 │
+├── docs/test-checklist.md        # Access table and manual test checklist
 └── README.md
 ```
 
@@ -102,12 +107,18 @@ JWT_SECRET=replace_with_a_long_random_string
 CLIENT_URL=http://localhost:5173
 ```
 
+The server stops with a clear message if `MONGO_URI` or `JWT_SECRET` is missing, or if it cannot reach the database.
+
 Seed the database:
 
 ```bash
-npm run seed:admin       # Creates admin@airline.com / admin123
-npm run seed:flights     # Adds 8 sample flights
+npm run seed:admin       # Creates admin@airline.com / admin123 (see the note below)
+npm run seed:flights     # Adds or refreshes 11 sample flights with future dates
 ```
+
+`seed:flights` is safe to run again: it moves the sample flights to future dates and keeps seat counts in line with existing bookings.
+
+> **Admin password:** without extra settings, `seed:admin` creates the public default login above, which is fine for local use only. Before seeding a deployed database, set `ADMIN_EMAIL` and `ADMIN_PASSWORD` in `backend/.env` (they are documented in `.env.example`). The password is never printed.
 
 Start the backend:
 
@@ -137,6 +148,15 @@ npm run dev
 ```
 
 Open **http://localhost:5173** in the browser.
+
+### 4. Run the tests
+
+```bash
+cd backend
+npm test
+```
+
+43 API tests start the app on a free port and run against the database in `backend/.env` (the admin account must exist). They create their own users and flights and delete them afterwards. See `docs/test-checklist.md` for the full manual checklist.
 
 ---
 
