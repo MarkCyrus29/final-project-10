@@ -5,6 +5,15 @@ const dotenv = require('dotenv');
 // Load environment variables
 dotenv.config();
 
+// Stop right away with a clear message if a required setting is missing,
+// instead of starting a server that cannot log anyone in or reach the database
+const missingEnv = ['MONGO_URI', 'JWT_SECRET'].filter((name) => !process.env[name]);
+if (missingEnv.length > 0) {
+  console.error(`Missing required environment variables: ${missingEnv.join(', ')}`);
+  console.error('Copy backend/.env.example to backend/.env and fill in the values.');
+  process.exit(1);
+}
+
 const connectDB = require('./config/db');
 const authRoutes = require('./routes/authRoutes');
 const userRoutes = require('./routes/userRoutes');
@@ -32,7 +41,9 @@ app.use(
       if (allowedOrigins.some((o) => origin.replace(/\/$/, '') === o.replace(/\/$/, ''))) {
         return callback(null, true);
       }
-      return callback(new Error('Not allowed by CORS'));
+      const corsError = new Error('Not allowed by CORS');
+      corsError.status = 403;
+      return callback(corsError);
     },
     credentials: true
   })
