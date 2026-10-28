@@ -8,6 +8,7 @@ import api from '../api/axios';
 import { useAuth } from '../context/AuthContext';
 import { useDocumentTitle } from '../hooks/useDocumentTitle';
 import { formatPrice, formatDate, formatTime, plural } from '../lib/format';
+import { CABIN_CLASSES, getMultiplier, calculateTotalPrice } from '../lib/pricing';
 import { Button, ButtonLink } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { Select } from '../components/ui/Select';
@@ -15,13 +16,6 @@ import { Card } from '../components/ui/Card';
 import { Alert } from '../components/ui/Alert';
 import { EmptyState } from '../components/ui/EmptyState';
 import { DetailSkeleton } from '../components/ui/Skeleton';
-
-// Class price multipliers
-const MULTIPLIERS = {
-  Economy: 1,
-  Business: 2,
-  'First Class': 3
-};
 
 // Passenger validation schema
 const schema = yup.object().shape({
@@ -246,9 +240,9 @@ const BookFlight = () => {
   }
 
   // Calculate pricing
-  const multiplier = MULTIPLIERS[selectedClass] || 1;
+  const multiplier = getMultiplier(selectedClass);
   const count = watchedPassengers.length || 1;
-  const estimatedTotal = (flight?.basePrice || 0) * multiplier * count;
+  const estimatedTotal = calculateTotalPrice(flight?.basePrice, selectedClass, count);
 
   return (
     <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
@@ -300,9 +294,11 @@ const BookFlight = () => {
               id="seatClass"
               {...register('seatClass')}
             >
-              <option value="Economy">Economy (1× base price)</option>
-              <option value="Business">Business (2× base price)</option>
-              <option value="First Class">First Class (3× base price)</option>
+              {CABIN_CLASSES.map((c) => (
+                <option key={c.name} value={c.name}>
+                  {c.name} ({c.multiplier}× base price)
+                </option>
+              ))}
             </Select>
 
             <Select

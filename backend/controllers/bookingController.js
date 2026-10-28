@@ -3,13 +3,7 @@ const Booking = require('../models/Booking');
 const Flight = require('../models/Flight');
 const generateReference = require('../utils/generateReference');
 const { reserveSeats, releaseSeats } = require('../utils/seats');
-
-// Seat class price multipliers
-const CLASS_MULTIPLIERS = {
-  Economy: 1,
-  Business: 2,
-  'First Class': 3
-};
+const { calculateTotalPrice } = require('../utils/pricing');
 
 // @desc    Create a new flight booking
 // @route   POST /api/bookings
@@ -49,8 +43,7 @@ const createBooking = async (req, res, next) => {
     }
 
     // Calculate total price: basePrice * multiplier * passenger count
-    const multiplier = CLASS_MULTIPLIERS[seatClass] || 1;
-    const totalPrice = flight.basePrice * multiplier * passengers.length;
+    const totalPrice = calculateTotalPrice(flight.basePrice, seatClass, passengers.length);
 
     // Generate unique booking reference code
     const bookingReference = await generateReference();
