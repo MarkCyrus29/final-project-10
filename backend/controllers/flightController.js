@@ -33,9 +33,10 @@ const getFlights = async (req, res, next) => {
     const { origin, destination, date, all } = req.query;
     const conditions = [];
 
-    // Cancelled flights are hidden unless ?all=true (used by the admin list)
+    // Cancelled and already departed flights are hidden unless ?all=true (used by the admin list)
     if (all !== 'true') {
       conditions.push({ status: { $ne: 'Cancelled' } });
+      conditions.push({ departureTime: { $gt: new Date() } });
     }
 
     if (typeof origin === 'string' && origin.trim()) {
